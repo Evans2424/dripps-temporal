@@ -102,9 +102,10 @@ def load(path: str | Path = DEFAULT_RAW, *, strict: bool = True) -> pd.DataFrame
     return df
 
 
-#: Characters the exporter emits inside sentence text. U+00A0 appears 1133 times
-#: (557 sentences) and U+2028 once; both survive naive processing but change
-#: tokenization, so downstream text work uses ``sentence_norm``.
+#: Characters the exporter emits inside sentence text: U+00A0 in 557 sentences
+#: and U+2028 in one (``docs/DATA_AUDIT.md`` carries the exact counts); both
+#: survive naive processing but change tokenization, so downstream text work
+#: uses ``sentence_norm``.
 _ODD_WHITESPACE = re.compile(r"[\u00a0\u2028\u2029\u000b\u000c\u0085]")
 
 

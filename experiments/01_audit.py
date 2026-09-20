@@ -122,8 +122,9 @@ def main() -> None:
     out += [md_table(sparse, "feature"), ""]
 
     path = ROOT / "docs/DATA_AUDIT.md"
-    path.write_text("\n".join(out), encoding="utf-8")
-    print(f"wrote {path.relative_to(ROOT)} ({len('\n'.join(out).splitlines())} lines)")
+    text = "\n".join(out)
+    path.write_text(text, encoding="utf-8")
+    print(f"wrote {path.relative_to(ROOT)} ({len(text.splitlines())} lines)")
 
 
 if __name__ == "__main__":
