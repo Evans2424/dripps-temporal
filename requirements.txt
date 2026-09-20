@@ -1,0 +1,10 @@
+# matplotlib and statsmodels are used by the figure and hierarchical-model
+# steps that are still to come; everything else is needed by 'make all'.
+matplotlib==3.11.2
+numpy==2.5.3
+pandas==3.0.6
+pytest==9.1.1
+scikit-learn==1.9.1
+scipy==1.18.1
+statsmodels==0.15.0
+xgboost==3.4.1
