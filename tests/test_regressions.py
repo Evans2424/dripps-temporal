@@ -274,3 +274,34 @@ def _load_viewer():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+# --- a top-level `const top` shadowed window.top and blanked the whole page --
+
+WINDOW_GLOBALS = {
+    "top", "self", "parent", "name", "status", "length", "origin", "location",
+    "history", "closed", "frames", "screen", "scrollX", "scrollY", "innerWidth",
+    "innerHeight", "outerWidth", "outerHeight", "opener", "navigator", "document",
+    "event", "external", "menubar", "toolbar", "locationbar", "personalbar",
+}
+
+
+def test_viewer_script_declares_no_window_globals():
+    """`const top = ...` is a SyntaxError at browser script scope.
+
+    window.top is a non-configurable own property of window, so re-declaring it
+    fails to *parse* -- taking the whole script with it and rendering a blank
+    page. Node parses the same file happily, because the name is only taken in a
+    browser global scope, so this is the check that catches it.
+    """
+    template = (ROOT / "experiments/assets/viewer_template.html").read_text(encoding="utf-8")
+    script = template.rsplit("<script>", 1)[1].rsplit("</script>", 1)[0]
+
+    declared = set()
+    for line in script.splitlines():
+        m = re.match(r"(?:const|let|var)\s+([A-Za-z_$][\w$]*)", line)
+        if m:  # top-level only: nested declarations are indented
+            declared.add(m.group(1))
+
+    clashes = declared & WINDOW_GLOBALS
+    assert not clashes, f"top-level declaration shadows a window global: {clashes}"

@@ -737,12 +737,12 @@ document.getElementById("stamp").append(
 const tiles = el("div", {class: "tiles"});
 const best = D.baselines.filter(r => !/circular/.test(r.model))
   .sort((a, b) => b.macro_f1 - a.macro_f1)[0];
-const top = D.cue_importance.slice()
+const topCue = D.cue_importance.slice()
   .sort((a, b) => b.importance_ablation - a.importance_ablation)[0];
 const zero = D.cue_importance.filter(r =>
   r.ci_lo_ablation != null && r.ci_lo_ablation < 0 && r.ci_hi_ablation > 0).length;
 [["Best model", best.model.replace(/^B\d\s/, ""), `macro-F1 ${fmt(best.macro_f1, 3)}`],
- ["Strongest cue", top.block, `${fmt(top.importance_ablation, 3)} macro-F1 drop`],
+ ["Strongest cue", topCue.block, `${fmt(topCue.importance_ablation, 3)} macro-F1 drop`],
  ["Blocks at zero", String(zero) + " of 6", "ablation CI crosses zero"],
  ["Majority floor", fmt(D.baselines.find(r => /majority/.test(r.model)).macro_f1, 3),
   "what any result must beat"],
@@ -756,5 +756,14 @@ try {
   const saved = localStorage.getItem("dripps.tab");
   if (saved && HEAD[saved]) start = saved;
 } catch (e) { /* private mode */ }
-show(start);
+
+try {
+  show(start);
+} catch (err) {
+  main.textContent = "";
+  main.appendChild(el("div", {class: "warnbox", html:
+    "<b>This section failed to render.</b> " + String(err) +
+    " \u2014 the underlying tables are still in results/tables/."}));
+  throw err;
+}
 </script>
