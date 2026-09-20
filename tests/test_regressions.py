@@ -85,11 +85,11 @@ def test_permutation_skips_derived_only_blocks(df):
     sub = df[df.variety == "EP"]
     X, y, g = features.build(sub), features.target(sub), features.groups(sub)
     perm = interpret.block_permutation_importance(
-        models.b3_logit(), X, y, g, features.CUE_BLOCKS, n_repeats=2
+        models.b3_logit(), X, y, g, features.CUE_BLOCKS, n_repeats=2, n_boot=0
     )
     assert "interaction" not in set(perm["block"])
     abl = interpret.block_ablation_importance(
-        models.b3_logit(), X, y, g, features.CUE_BLOCKS
+        models.b3_logit(), X, y, g, features.CUE_BLOCKS, n_boot=0
     )
     assert "interaction" in set(abl["block"])
 

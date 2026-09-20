@@ -28,8 +28,8 @@ def main() -> None:
         X, y, g = features.build(sub), features.target(sub), features.groups(sub)
         # ablation, not permutation: the interaction block is derived
         imp = interpret.block_ablation_importance(
-            models.b3_logit(), X, y, g, features.CUE_BLOCKS
-        ).set_index("block")["importance"]
+            models.b3_logit(), X, y, g, features.CUE_BLOCKS, n_boot=0
+        ).set_index("block")["importance"]  # ranking only, so skip the bootstrap
         rows[variety] = imp
         floors[variety] = {
             "majority": evaluate.score(models.b0_majority(), X, y, g, n_repeats=3)["macro_f1"],
