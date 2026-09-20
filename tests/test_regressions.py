@@ -155,3 +155,122 @@ def test_default_path_is_repo_anchored(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     assert io.DEFAULT_RAW.is_absolute() and io.DEFAULT_RAW.exists()
     assert len(io.load()) == 993
+
+
+# --- tree serialisation must describe the same tree export_text prints -------
+
+def test_tree_structure_agrees_with_tree_rules(df):
+    """The JSON the viewer draws and the text the paper quotes are one tree."""
+    sub = io.analysis_frame(df)
+    X, y = features.build(sub), features.target(sub)
+    tree = models.b4_tree(max_depth=3).fit(X, y)
+    ids = [str(i) for i in sub[schema.ID]]
+
+    struct = interpret.tree_structure(tree, X.columns, tree.classes_, X=X, ids=ids)
+    rules = interpret.tree_rules(tree, X.columns, tree.classes_)
+
+    assert len(struct["nodes"]) == tree.tree_.node_count
+    # every split feature named in the JSON appears in the text export
+    for node in struct["nodes"]:
+        if not node["is_leaf"]:
+            assert node["feature"] in rules
+    # leaves partition the rows: each row lands in exactly one
+    landed = [r for n in struct["nodes"] if n["is_leaf"] for r in n["rows"]]
+    assert sorted(landed) == sorted(ids)
+
+
+def test_tree_structure_counts_are_counts_not_proportions(df):
+    """sklearn normalises tree_.value; the JSON must carry sample counts."""
+    sub = io.analysis_frame(df)
+    X, y = features.build(sub), features.target(sub)
+    tree = models.b4_tree(max_depth=3).fit(X, y)
+    struct = interpret.tree_structure(tree, X.columns, tree.classes_)
+
+    root = struct["nodes"][0]
+    assert sum(root["counts"]) == len(X)
+    for node in struct["nodes"]:
+        assert sum(node["counts"]) == pytest.approx(node["n_samples"], abs=1)
+
+
+# --- SHAP wiring: the additivity property is the real correctness check ------
+
+def test_tree_shap_is_additive(df):
+    """shap values + base must reproduce the model's own output per class."""
+    from dripps import explain
+
+    sub = io.analysis_frame(df).head(120)
+    X, y = features.build(sub), features.target(sub)
+    forest = models.b5_forest(n_estimators=40).fit(X, y)
+
+    result = explain.tree_shap(forest, X)
+    assert result["values"].shape == (len(X), X.shape[1], len(forest.classes_))
+
+    got = result["values"].sum(axis=1) + result["base"]
+    np.testing.assert_allclose(got, forest.predict_proba(X), atol=1e-6)
+
+
+def test_shap_unwrapping_does_not_grab_sklearns_template_estimator(df):
+    """sklearn ensembles define estimator_ as the *unfitted* prototype tree.
+
+    Unwrapping by that name hands TreeExplainer a bare DecisionTreeClassifier
+    instead of the forest, which fails with a confusing AttributeError.
+    """
+    from dripps import explain
+
+    sub = io.analysis_frame(df).head(80)
+    X, y = features.build(sub), features.target(sub)
+    forest = models.b5_forest(n_estimators=10).fit(X, y)
+
+    assert explain._underlying(forest)[0] is forest
+    xgb = models.b5_xgboost(n_estimators=10).fit(X, y)
+    assert explain._underlying(xgb)[0] is xgb.booster_
+
+
+def test_shap_stays_on_the_data_manifold():
+    """Derived columns are products of others, so interventional SHAP would
+    score impossible rows -- the failure recompute_derived exists to prevent."""
+    from dripps import explain
+
+    assert explain.PERTURBATION == "tree_path_dependent"
+
+
+# --- the viewer payload must not silently drop a cue block ------------------
+
+def test_viewer_payload_covers_every_cue_block():
+    pytest.importorskip("shap")
+    viewer = _load_viewer()
+    for name in ("cue_importance.csv", "shap_blocks.csv"):
+        if not (ROOT / "results/tables" / name).exists():
+            pytest.skip(f"{name} not built yet")
+
+    payload = viewer.build_payload()
+    assert set(payload["blocks"]) == set(features.CUE_BLOCKS)
+    listed = {r["block"] for r in payload["cue_importance"]}
+    assert listed == set(features.CUE_BLOCKS)
+    assert set(payload["tree"]["classes"]) == set(schema.TR_LABELS)
+
+
+def test_viewer_render_neutralises_script_close_in_corpus_text():
+    """Sentence text is arbitrary; a literal </script would end the payload."""
+    viewer = _load_viewer()
+    import json
+
+    hostile = "a </script><script>boom()</script> b"
+    html = viewer.render({"s": hostile}, "<script>__PAYLOAD__</script>")
+
+    # the only tag close in the document is the template's own
+    assert html.count("</script>") == 1
+    assert "<\\/script" in html
+    # and the escaping is lossless: the page still parses back to the original
+    payload = html[len("<script>"):-len("</script>")]
+    assert json.loads(payload)["s"] == hostile
+
+
+def _load_viewer():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "viewer", ROOT / "experiments/06_viewer.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module

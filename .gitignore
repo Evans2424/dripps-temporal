@@ -7,3 +7,10 @@ results/models/*
 data/interim/*
 data/processed/*
 .DS_Store
+
+# generated build output: the dashboard and the per-row SHAP matrices behind it.
+# The aggregates (shap_summary, shap_blocks) are small and stay tracked; rebuild
+# these two with `make explain`, then `make viewer`.
+results/viewer.html
+results/tables/shap_forest.csv
+results/tables/shap_xgboost.csv

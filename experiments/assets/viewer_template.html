@@ -1,0 +1,760 @@
+<title>DRIPPS Cue Hierarchy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Spectral:wght@500;600&display=swap">
+
+<style>
+:root{
+  --bg:#F4F6F6; --surface:#FFFFFF; --surface-2:#EAEFEF; --sunken:#E2E9E9;
+  --ink:#14181A; --ink-2:#4E585C; --ink-3:#778285;
+  --line:#D5DEDE; --line-strong:#B6C3C3;
+  --accent:#0E7C7B; --accent-soft:#D8EBEA;
+  --ant:#B4621B; --simul:#0E7C7B; --post:#4C4B9E;
+  --warn:#A4402E; --warn-soft:#F6E3DF;
+  --shadow:0 1px 2px rgba(20,40,40,.06), 0 8px 24px -12px rgba(20,40,40,.18);
+  --r:10px;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --serif:"Spectral",Georgia,"Times New Roman",serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1314; --surface:#161D1E; --surface-2:#1D2627; --sunken:#121A1B;
+    --ink:#E9EEEE; --ink-2:#9CAAAC; --ink-3:#77878A;
+    --line:#293435; --line-strong:#3B4A4B;
+    --accent:#4FBFBB; --accent-soft:#12302F;
+    --ant:#D98A3E; --simul:#4FBFBB; --post:#8A89DB;
+    --warn:#E0705C; --warn-soft:#331C18;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1314; --surface:#161D1E; --surface-2:#1D2627; --sunken:#121A1B;
+  --ink:#E9EEEE; --ink-2:#9CAAAC; --ink-3:#77878A;
+  --line:#293435; --line-strong:#3B4A4B;
+  --accent:#4FBFBB; --accent-soft:#12302F;
+  --ant:#D98A3E; --simul:#4FBFBB; --post:#8A89DB;
+  --warn:#E0705C; --warn-soft:#331C18;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:600;text-wrap:balance;margin:0}
+a{color:var(--accent)}
+code,.mono{font-family:var(--mono);font-size:.92em}
+table{border-collapse:collapse;width:100%;font-size:.92em}
+th,td{text-align:left;padding:7px 12px 7px 0;border-bottom:1px solid var(--line)}
+th{font-size:.78em;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--ink-3);font-weight:600;white-space:nowrap}
+td.num,th.num{text-align:right;font-family:var(--mono);
+  font-variant-numeric:tabular-nums;padding-right:14px}
+.scroll-x{overflow-x:auto;max-width:100%}
+
+/* shell ------------------------------------------------------------------ */
+.wrap{max-width:1180px;margin:0 auto;padding-inline:16px;padding-block:0 64px}
+.masthead{padding-block:34px 22px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.masthead h1{font-size:clamp(1.85rem,4.4vw,2.5rem);line-height:1.1;
+  letter-spacing:-.015em}
+.masthead p{color:var(--ink-2);max-width:66ch;margin:.7em 0 0}
+.stamp{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px 18px;
+  font-family:var(--mono);font-size:.76rem;color:var(--ink-3)}
+
+.layout{display:grid;grid-template-columns:186px minmax(0,1fr);gap:40px;
+  align-items:start;margin-top:26px}
+.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 14px);
+  display:flex;flex-direction:column;gap:1px}
+.rail button{all:unset;cursor:pointer;padding:7px 11px;border-radius:7px;
+  font-size:.875rem;color:var(--ink-2);display:flex;gap:9px;align-items:baseline}
+.rail button:hover{background:var(--surface-2);color:var(--ink)}
+.rail button[aria-selected="true"]{background:var(--accent-soft);
+  color:var(--accent);font-weight:600}
+.rail .n{font-family:var(--mono);font-size:.72em;color:var(--ink-3)}
+.rail button[aria-selected="true"] .n{color:var(--accent)}
+.rail button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+section{scroll-margin-top:20px}
+section>h2{font-size:1.42rem;letter-spacing:-.01em}
+.lede{color:var(--ink-2);max-width:68ch;margin:.5em 0 0}
+.panel{background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r);padding:20px;margin-top:20px}
+.panel>h3{font-size:1.02rem;margin-bottom:3px}
+.panel>h3+p{color:var(--ink-2);font-size:.9rem;margin:0 0 14px;max-width:66ch}
+
+/* summary tiles ---------------------------------------------------------- */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));
+  gap:14px;margin-top:22px}
+.tile{background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r);padding:15px 16px}
+.tile .k{font-size:.74rem;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--ink-3);font-weight:600}
+.tile .v{font-family:var(--serif);font-size:1.85rem;line-height:1.15;
+  margin-top:5px;font-variant-numeric:tabular-nums}
+.tile .s{font-size:.82rem;color:var(--ink-2);margin-top:3px}
+
+/* chips ------------------------------------------------------------------ */
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;
+  border-radius:999px;font-size:.73rem;font-weight:600;letter-spacing:.02em;
+  border:1px solid transparent;white-space:nowrap}
+.chip.zero{background:var(--warn-soft);color:var(--warn);
+  border-color:color-mix(in srgb,var(--warn) 30%,transparent)}
+.chip.muted{background:var(--surface-2);color:var(--ink-2);
+  border-color:var(--line)}
+.chip.dot::before{content:"";width:7px;height:7px;border-radius:50%;
+  background:currentColor}
+
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  margin-bottom:16px}
+.seg{display:inline-flex;background:var(--sunken);border-radius:8px;padding:3px;
+  border:1px solid var(--line)}
+.seg button{all:unset;cursor:pointer;padding:5px 12px;border-radius:6px;
+  font-size:.83rem;color:var(--ink-2)}
+.seg button[aria-selected="true"]{background:var(--surface);color:var(--ink);
+  font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+select{font:inherit;font-size:.85rem;padding:5px 9px;border-radius:7px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+
+.note{border-left:2px solid var(--accent);padding:2px 0 2px 14px;
+  color:var(--ink-2);font-size:.88rem;margin-top:16px;max-width:68ch}
+.note strong{color:var(--ink)}
+.warnbox{background:var(--warn-soft);border:1px solid
+  color-mix(in srgb,var(--warn) 26%,transparent);border-radius:8px;
+  padding:12px 14px;font-size:.87rem;color:var(--ink);margin-top:16px;
+  max-width:70ch}
+.warnbox b{color:var(--warn)}
+
+svg{display:block;max-width:100%;height:auto;overflow:visible}
+svg text{font-family:var(--sans);fill:var(--ink-2)}
+svg text.val{font-family:var(--mono);font-variant-numeric:tabular-nums}
+svg text.lab{fill:var(--ink)}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:12px;
+  font-size:.79rem;color:var(--ink-2)}
+
+pre.ascii{font-family:var(--mono);font-size:.8rem;line-height:1.5;
+  background:var(--sunken);border:1px solid var(--line);border-radius:8px;
+  padding:14px;overflow-x:auto;margin:0;color:var(--ink-2)}
+
+.sentence-list{display:flex;flex-direction:column;gap:9px;margin-top:14px;
+  max-height:340px;overflow-y:auto}
+.sent{border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+  background:var(--surface-2)}
+.sent .meta{display:flex;gap:8px;align-items:center;margin-bottom:5px;
+  font-family:var(--mono);font-size:.73rem;color:var(--ink-3)}
+.sent .txt{font-size:.9rem;line-height:1.5}
+
+.empty{color:var(--ink-3);font-size:.88rem;font-style:italic}
+
+/* methods ---------------------------------------------------------------- */
+.prose{max-width:70ch}
+.prose h1{font-size:1.5rem;margin:0 0 .4em}
+.prose h2{font-size:1.2rem;margin:1.7em 0 .4em}
+.prose h3{font-size:1rem;margin:1.4em 0 .3em}
+.prose p{margin:.75em 0;color:var(--ink-2)}
+.prose strong{color:var(--ink)}
+.prose code{background:var(--surface-2);padding:1px 5px;border-radius:4px}
+.prose table{margin:1em 0}
+.prose .scroll-x{max-width:100%}
+a.cite{font-family:var(--mono);font-size:.84em;text-decoration:none;
+  border-bottom:1px dotted var(--accent)}
+ol.refs{list-style:none;padding:0;margin:14px 0 0;display:flex;
+  flex-direction:column;gap:13px}
+ol.refs li{font-size:.88rem;line-height:1.5;scroll-margin-top:24px}
+ol.refs li:target{background:var(--accent-soft);border-radius:6px;
+  padding:8px 10px;margin:-8px -10px}
+.refkey{font-family:var(--mono);font-size:.76rem;color:var(--accent);
+  display:block}
+.reftitle{color:var(--ink);font-weight:500}
+
+@media (max-width:860px){
+  .layout{grid-template-columns:1fr;gap:20px}
+  .rail{position:sticky;top:env(safe-area-inset-top,0px);flex-direction:row;
+    overflow-x:auto;gap:4px;background:var(--bg);padding-block:9px;
+    border-bottom:1px solid var(--line);z-index:5}
+  .rail button{white-space:nowrap;padding:6px 10px}
+  .rail .n{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;
+  transition:none!important}}
+</style>
+
+<script id="data" type="application/json">__PAYLOAD__</script>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="eyebrow">DRIPPS &middot; temporal relations</div>
+    <h1>Which cues carry temporal relation?</h1>
+    <p id="standfirst"></p>
+    <div class="stamp" id="stamp"></div>
+  </header>
+
+  <div class="layout">
+    <nav class="rail" id="rail" role="tablist" aria-label="Sections"></nav>
+    <main id="main"></main>
+  </div>
+</div>
+
+<script>
+const D = JSON.parse(document.getElementById("data").textContent);
+const CLS = {Ant:"var(--ant)", Simul:"var(--simul)", Post:"var(--post)"};
+const fmt = (x, n = 3) => (x === null || x === undefined || Number.isNaN(x))
+  ? "—" : Number(x).toFixed(n);
+const el = (t, a = {}, kids = []) => {
+  const n = document.createElementNS(
+    ["svg","g","rect","line","text","path","circle","defs","pattern"].includes(t)
+      ? "http://www.w3.org/2000/svg" : "http://www.w3.org/1999/xhtml", t);
+  for (const [k, v] of Object.entries(a)) {
+    if (k === "class") n.setAttribute("class", v);
+    else if (k === "text") n.textContent = v;
+    else if (k === "html") n.innerHTML = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  (Array.isArray(kids) ? kids : [kids]).forEach(c => c && n.appendChild(c));
+  return n;
+};
+
+/* ---------- reusable: horizontal bars with CI whiskers ------------------ */
+function barsCI(rows, {width = 620, showCI = true, unit = ""} = {}) {
+  const longest = Math.max(0, ...rows.map(r => String(r.label).length));
+  const padL = Math.min(200, Math.max(104, longest * 7.4 + 14));
+  const rowH = 30, padR = 66, padT = 22, padB = 30;
+  const h = padT + rows.length * rowH + padB;
+  const lo = Math.min(0, ...rows.map(r => showCI && r.lo != null ? r.lo : r.v));
+  const hi = Math.max(...rows.map(r => showCI && r.hi != null ? r.hi : r.v), 0);
+  const span = (hi - lo) || 1;
+  const x = v => padL + ((v - lo) / span) * (width - padL - padR);
+  const svg = el("svg", {viewBox: `0 0 ${width} ${h}`, role: "img",
+    "aria-label": "importance with confidence intervals"});
+
+  const defs = el("defs");
+  const pat = el("pattern", {id: "hatch", width: "5", height: "5",
+    patternTransform: "rotate(45)", patternUnits: "userSpaceOnUse"});
+  pat.appendChild(el("line", {x1: "0", y1: "0", x2: "0", y2: "5",
+    stroke: "currentColor", "stroke-width": "2.4"}));
+  defs.appendChild(pat); svg.appendChild(defs);
+
+  // zero rule, labelled because several intervals cross it
+  if (lo < 0) {
+    svg.appendChild(el("line", {x1: x(0), y1: padT - 8, x2: x(0),
+      y2: h - padB + 2, stroke: "var(--line-strong)", "stroke-width": "1",
+      "stroke-dasharray": "3 3"}));
+    svg.appendChild(el("text", {x: x(0), y: padT - 12, "text-anchor": "middle",
+      "font-size": "10", class: "val", text: "0"}));
+  }
+
+  rows.forEach((r, i) => {
+    const y = padT + i * rowH + rowH / 2;
+    const crosses = showCI && r.lo != null && r.lo < 0 && r.hi > 0;
+    const colour = r.colour || "var(--accent)";
+    const g = el("g", {color: colour});
+    g.appendChild(el("text", {x: padL - 10, y: y + 4, "text-anchor": "end",
+      "font-size": "12", class: "lab", text: r.label}));
+    const x0 = x(Math.min(0, r.v)), x1 = x(Math.max(0, r.v));
+    g.appendChild(el("rect", {x: x0, y: y - 8, width: Math.max(1, x1 - x0),
+      height: 16, rx: 2.5, fill: crosses ? "url(#hatch)" : colour,
+      opacity: crosses ? .85 : .92}));
+    if (showCI && r.lo != null) {
+      g.appendChild(el("line", {x1: x(r.lo), y1: y, x2: x(r.hi), y2: y,
+        stroke: colour, "stroke-width": "1.4"}));
+      [r.lo, r.hi].forEach(v => g.appendChild(el("line", {x1: x(v), y1: y - 5,
+        x2: x(v), y2: y + 5, stroke: colour, "stroke-width": "1.4"})));
+    }
+    g.appendChild(el("text", {x: width - padR + 8, y: y + 4, "font-size": "11.5",
+      class: "val", text: fmt(r.v, 3) + unit}));
+    svg.appendChild(g);
+  });
+  return svg;
+}
+
+function tableOf(cols, rows) {
+  const thead = el("tr", {}, cols.map(c =>
+    el("th", {class: c.num ? "num" : "", text: c.label})));
+  const body = rows.map(r => el("tr", {}, cols.map(c => {
+    const v = r[c.key];
+    if (c.render) return c.render(r);
+    return el("td", {class: c.num ? "num" : "",
+      text: c.num ? fmt(v, c.dp ?? 3) : (v ?? "—")});
+  })));
+  return el("div", {class: "scroll-x"}, [
+    el("table", {}, [el("thead", {}, thead), el("tbody", {}, body)])]);
+}
+
+function panel(title, sub, kids) {
+  const p = el("div", {class: "panel"}, [el("h3", {text: title})]);
+  if (sub) p.appendChild(el("p", {text: sub}));
+  (Array.isArray(kids) ? kids : [kids]).forEach(k => k && p.appendChild(k));
+  return p;
+}
+
+function classLegend(classes) {
+  return el("div", {class: "legend"}, classes.map(c =>
+    el("span", {class: "chip dot muted", text: c,
+      style: `color:${CLS[c] || "var(--ink-2)"}`})));
+}
+
+/* ---------- sections ---------------------------------------------------- */
+const S = {};
+
+S.hierarchy = () => {
+  const frag = document.createDocumentFragment();
+  const rows = D.cue_importance.slice()
+    .sort((a, b) => b.importance_ablation - a.importance_ablation);
+
+  const abl = rows.map(r => ({label: r.block, v: r.importance_ablation,
+    lo: r.ci_lo_ablation, hi: r.ci_hi_ablation, colour: "var(--accent)"}));
+  frag.appendChild(panel("Refit ablation — the primary measure",
+    "Drop in out-of-fold macro-F1 when a cue block is removed and the model refit. A block near zero is one the model can do without. Hatched bars have a 95% interval crossing zero.",
+    [barsCI(abl), el("div", {class: "legend"}, [
+      el("span", {html: '<span class="chip zero">hatched = CI crosses 0</span>'})])]));
+
+  const perm = rows.filter(r => r.importance_permutation != null)
+    .sort((a, b) => b.importance_permutation - a.importance_permutation)
+    .map(r => ({label: r.block, v: r.importance_permutation,
+      lo: r.ci_lo_permutation, hi: r.ci_hi_permutation, colour: "var(--post)"}));
+  frag.appendChild(panel("Block permutation — the cross-check",
+    "Drop when a block is shuffled in the held-out fold and derived columns are recomputed. The interaction block is absent by construction: its columns are products of the aspect columns, so permuting them is either impossible or a no-op.",
+    barsCI(perm)));
+
+  frag.appendChild(panel("Both measures, with spread",
+    "sd_fold is the spread across the five folds. It describes the split, not the data, so it is not an error bar — the intervals above come from resampling sentence groups.",
+    tableOf([
+      {key: "block", label: "block"},
+      {key: "importance_ablation", label: "ablation", num: true, dp: 4},
+      {key: "ci_ab", label: "95% CI", num: true, render: r =>
+        el("td", {class: "num", html:
+          r.ci_lo_ablation == null ? "—" :
+          `${fmt(r.ci_lo_ablation, 4)}, ${fmt(r.ci_hi_ablation, 4)}` +
+          (r.ci_lo_ablation < 0 && r.ci_hi_ablation > 0
+            ? ' <span class="chip zero">0</span>' : "")})},
+      {key: "sd_fold_ablation", label: "sd_fold", num: true, dp: 4},
+      {key: "importance_permutation", label: "permutation", num: true, dp: 4},
+      {key: "ci_pm", label: "95% CI", num: true, render: r =>
+        el("td", {class: "num", text: r.ci_lo_permutation == null ? "—" :
+          `${fmt(r.ci_lo_permutation, 4)}, ${fmt(r.ci_hi_permutation, 4)}`})},
+    ], rows)));
+
+  frag.appendChild(el("div", {class: "note", html:
+    "<strong>Reading the tail.</strong> The top two blocks separate cleanly from the rest under both measures. Below them the intervals overlap each other and, for three blocks, zero — so the ordering within the tail is not established by this evidence, only the gap between the top and the tail."}));
+  return frag;
+};
+
+S.ladder = () => {
+  const frag = document.createDocumentFragment();
+  const rows = D.baselines.slice().sort((a, b) => b.macro_f1 - a.macro_f1);
+  const bars = rows.map(r => ({
+    label: r.model, v: r.macro_f1, lo: r.ci_lo, hi: r.ci_hi,
+    colour: /circular/.test(r.model) ? "var(--warn)" : "var(--accent)"}));
+  frag.appendChild(panel("Out-of-fold macro-F1",
+    "Repeated grouped cross-validation, intervals from resampling sentence groups.",
+    barsCI(bars, {showCI: true})));
+  frag.appendChild(el("div", {class: "warnbox", html:
+    "<b>The circular row is not a result.</b> It is allowed to see <code>DR</code> and <code>SR-SC</code>, which encode the answer. It sits on the chart to show what the leaky features would buy — and how little separates it from the honest logit."}));
+  frag.appendChild(panel("All rungs", null, tableOf([
+    {key: "model", label: "model"},
+    {key: "macro_f1", label: "macro-F1", num: true, dp: 4},
+    {key: "ci", label: "95% CI", num: true, render: r => el("td", {class: "num",
+      text: `${fmt(r.ci_lo, 4)}, ${fmt(r.ci_hi, 4)}`})},
+    {key: "sd_seed", label: "sd_seed", num: true, dp: 4},
+  ], rows)));
+  return frag;
+};
+
+S.tree = () => {
+  const frag = document.createDocumentFragment();
+  const nodes = D.tree.nodes, classes = D.tree.classes;
+  const depth = new Array(nodes.length).fill(0);
+  const order = [];
+  (function walk(i, d) {
+    depth[i] = d;
+    if (nodes[i].is_leaf) { order.push(i); return; }
+    walk(nodes[i].left, d + 1); order.push(i); walk(nodes[i].right, d + 1);
+  })(0, 0);
+  const leaves = order.filter(i => nodes[i].is_leaf);
+  const maxD = Math.max(...depth);
+
+  const W = 940, colW = 128, rowH = 106, padL = 26, padT = 26;
+  const H = padT * 2 + maxD * rowH + 64;
+  const xs = new Array(nodes.length).fill(0);
+  leaves.forEach((i, k) => { xs[i] = padL + k * colW + colW / 2; });
+  [...order].reverse().forEach(i => {
+    if (!nodes[i].is_leaf) xs[i] = (xs[nodes[i].left] + xs[nodes[i].right]) / 2;
+  });
+  const ys = i => padT + depth[i] * rowH;
+
+  const svg = el("svg", {viewBox: `0 0 ${Math.max(W, padL * 2 + leaves.length * colW)} ${H}`,
+    role: "img", "aria-label": "decision tree"});
+  nodes.forEach((n, i) => {
+    if (n.is_leaf) return;
+    [[n.left, "≤"], [n.right, ">"]].forEach(([c, sym]) => {
+      svg.appendChild(el("path", {
+        d: `M ${xs[i]} ${ys(i) + 20} C ${xs[i]} ${ys(i) + 58}, ${xs[c]} ${ys(c) - 46}, ${xs[c]} ${ys(c) - 22}`,
+        fill: "none", stroke: "var(--line-strong)", "stroke-width": "1.3"}));
+      svg.appendChild(el("text", {x: (xs[i] + xs[c]) / 2 + (sym === "≤" ? -12 : 12),
+        y: ys(i) + 46, "text-anchor": "middle", "font-size": "11", class: "val",
+        text: sym === "≤" ? "no" : "yes"}));
+    });
+  });
+  nodes.forEach((n, i) => {
+    const x = xs[i], y = ys(i);
+    const g = el("g", {});
+    if (n.is_leaf) {
+      const total = n.counts.reduce((a, b) => a + b, 0);
+      const bw = 92; let off = x - bw / 2;
+      g.appendChild(el("rect", {x: x - bw / 2 - 5, y: y - 20, width: bw + 10,
+        height: 50, rx: 8, fill: "var(--surface)", stroke: "var(--line)"}));
+      n.counts.forEach((c, k) => {
+        const w = (c / total) * bw;
+        g.appendChild(el("rect", {x: off, y: y - 12, width: Math.max(0, w),
+          height: 11, fill: CLS[classes[k]] || "var(--ink-3)",
+          opacity: classes[k] === n.predicted ? .95 : .34}));
+        off += w;
+      });
+      g.appendChild(el("text", {x, y: y + 12, "text-anchor": "middle",
+        "font-size": "11.5", class: "lab", text: n.predicted,
+        style: `fill:${CLS[n.predicted]}` }));
+      g.appendChild(el("text", {x, y: y + 24, "text-anchor": "middle",
+        "font-size": "10", class: "val", text: `n=${n.n_samples}`}));
+      g.setAttribute("style", "cursor:pointer");
+      g.addEventListener("click", () => showLeaf(i));
+    } else {
+      const label = n.feature, w = Math.max(96, label.length * 7.2);
+      g.appendChild(el("rect", {x: x - w / 2, y: y - 16, width: w, height: 32,
+        rx: 7, fill: "var(--surface-2)", stroke: "var(--line-strong)"}));
+      g.appendChild(el("text", {x, y: y + 4, "text-anchor": "middle",
+        "font-size": "11.5", class: "lab mono", text: label}));
+    }
+    svg.appendChild(g);
+  });
+
+  const holder = el("div", {class: "scroll-x"}, svg);
+  const out = el("div", {id: "leafout"}, el("p", {class: "empty",
+    text: "Select a leaf to read the sentences it covers."}));
+  frag.appendChild(panel("Depth-3 tree",
+    "Fit on all 793 rows so the splits can be read. Branches go left when the test fails. Click a leaf for its sentences.",
+    [holder, classLegend(classes), out]));
+
+  window.showLeaf = (i) => {
+    const n = nodes[i];
+    const total = n.counts.reduce((a, b) => a + b, 0);
+    out.textContent = "";
+    out.appendChild(el("h4", {style: "margin-top:18px;font-size:.98rem",
+      text: `Leaf ${i} — predicts ${n.predicted}`}));
+    out.appendChild(el("p", {class: "lede", style: "font-size:.87rem",
+      text: `${total} rows: ` + n.counts.map((c, k) =>
+        `${classes[k]} ${c}`).join(", ") + `. Showing ${Math.min(24, n.rows.length)}.`}));
+    const list = el("div", {class: "sentence-list"});
+    n.rows.slice(0, 24).forEach(id => {
+      const s = D.sentences[id];
+      if (!s) return;
+      list.appendChild(el("div", {class: "sent"}, [
+        el("div", {class: "meta"}, [
+          el("span", {text: id}),
+          el("span", {class: "chip dot muted", text: s.tr,
+            style: `color:${CLS[s.tr]}`}),
+          el("span", {text: s.variety})]),
+        el("div", {class: "txt", text: s.text})]));
+    });
+    out.appendChild(list);
+  };
+
+  frag.appendChild(panel("Verbatim export",
+    "The same tree as scikit-learn prints it, which is what the paper quotes.",
+    el("pre", {class: "ascii", text: D.tree_rules})));
+  return frag;
+};
+
+S.shap = () => {
+  const frag = document.createDocumentFragment();
+  const modelNames = Object.keys(D.shap.models);
+  let model = modelNames[0], klass = "all", view = "block";
+
+  const controls = el("div", {class: "controls"});
+  const segModel = el("div", {class: "seg", role: "tablist"});
+  modelNames.forEach(m => segModel.appendChild(el("button", {text: m,
+    role: "tab", "aria-selected": String(m === model),
+    onclick: () => { model = m; draw(); }})));
+  const segView = el("div", {class: "seg", role: "tablist"});
+  [["block", "by block"], ["feature", "by cue"]].forEach(([v, lab]) =>
+    segView.appendChild(el("button", {text: lab, role: "tab",
+      "aria-selected": String(v === view),
+      onclick: () => { view = v; draw(); }})));
+  const sel = el("select", {onchange: e => { klass = e.target.value; draw(); }});
+  sel.appendChild(el("option", {value: "all", text: "all classes"}));
+  D.meta.classes.forEach(c => sel.appendChild(el("option", {value: c, text: c})));
+  controls.append(segModel, segView, sel);
+
+  const chart = el("div", {});
+  const body = panel("Mean |SHAP|",
+    "How much each cue moves this fitted model's output, averaged over sentences. Path-dependent TreeSHAP, so no impossible feature combinations are scored.",
+    [controls, chart]);
+
+  function draw() {
+    [...segModel.children].forEach(b =>
+      b.setAttribute("aria-selected", String(b.textContent === model)));
+    [...segView.children].forEach((b, i) =>
+      b.setAttribute("aria-selected", String(["block", "feature"][i] === view)));
+    const src = view === "block" ? D.shap.blocks : D.shap.summary;
+    const keyName = view === "block" ? "block" : "feature";
+    const agg = new Map();
+    src.filter(r => r.model === model && (klass === "all" || r["class"] === klass))
+      .forEach(r => {
+        const k = r[keyName];
+        agg.set(k, (agg.get(k) || 0) + r.mean_abs_shap);
+      });
+    const n = klass === "all" ? D.meta.classes.length : 1;
+    const rows = [...agg.entries()]
+      .map(([k, v]) => ({label: k, v: v / n,
+        colour: klass === "all" ? "var(--accent)" : CLS[klass]}))
+      .sort((a, b) => b.v - a.v);
+    chart.textContent = "";
+    chart.appendChild(barsCI(rows, {showCI: false}));
+  }
+  draw();
+  frag.appendChild(body);
+
+  frag.appendChild(el("div", {class: "warnbox", html:
+    "<b>Not on the ladder's scale, and not on each other's.</b> These describe models fit on all 793 rows, so they are not out-of-fold and do not belong beside the macro-F1 figures. The forest's leaves hold class probabilities and XGBoost's hold log-odds, so compare the two by rank only. Shapley values also split credit between correlated cues, which is why this is a check on ordering rather than a rival to the ablation."}));
+
+  // per-sentence attribution
+  const picker = el("select", {});
+  D.shap.ids.slice(0, 400).forEach(id => picker.appendChild(
+    el("option", {value: id, text: `${id} — ${D.sentences[id]?.tr ?? ""}`})));
+  const wf = el("div", {});
+  const drawWaterfall = () => {
+    const id = picker.value, idx = D.shap.ids.indexOf(id);
+    const cube = D.shap.models[model];
+    const k = Math.max(0, cube.classes.indexOf(D.sentences[id]?.tr));
+    const vals = cube.values[k][idx] || [];
+    const rows = cube.features.map((f, j) => ({label: f, v: vals[j] ?? 0,
+      colour: vals[j] >= 0 ? CLS[cube.classes[k]] : "var(--ink-3)"}))
+      .filter(r => Math.abs(r.v) > 1e-9)
+      .sort((a, b) => Math.abs(b.v) - Math.abs(a.v)).slice(0, 10);
+    wf.textContent = "";
+    const s = D.sentences[id];
+    wf.appendChild(el("div", {class: "sent"}, [
+      el("div", {class: "meta"}, [el("span", {text: id}),
+        el("span", {class: "chip dot muted", text: s.tr,
+          style: `color:${CLS[s.tr]}`}), el("span", {text: s.variety})]),
+      el("div", {class: "txt", text: s.text})]));
+    wf.appendChild(rows.length ? barsCI(rows, {showCI: false})
+      : el("p", {class: "empty", text: "No cue moved this prediction."}));
+  };
+  picker.addEventListener("change", drawWaterfall);
+  frag.appendChild(panel("One sentence at a time",
+    "Contributions toward this sentence's annotated class, largest first.",
+    [el("div", {class: "controls"}, picker), wf]));
+  drawWaterfall();
+  return frag;
+};
+
+S.variety = () => {
+  const frag = document.createDocumentFragment();
+  const {blocks, names, importance, ranks, performance} = D.variety;
+  const ref = D.meta.reference_variety;
+
+  const grid = el("div", {class: "scroll-x"});
+  const flat = importance.flat();
+  const mx = Math.max(...flat.map(Math.abs)) || 1;
+  const cols = [{key: "block", label: "block"}].concat(names.map(v => ({
+    key: v, label: v + (v === ref ? " (ref)" : ""), num: true})));
+  const rows = blocks.map((b, i) => {
+    const o = {block: b};
+    names.forEach((v, j) => { o[v] = importance[i][j]; });
+    return o;
+  });
+  grid.appendChild(tableOf(cols.map(c => c.key === "block" ? c : ({...c,
+    render: r => {
+      const val = r[c.key];
+      const a = Math.min(1, Math.abs(val) / mx) * .72;
+      const bg = val >= 0
+        ? `color-mix(in srgb, var(--accent) ${a * 100}%, transparent)`
+        : `color-mix(in srgb, var(--warn) ${a * 100}%, transparent)`;
+      return el("td", {class: "num", style: `background:${bg}`,
+        text: fmt(val, 4)});
+    }})), rows));
+
+  frag.appendChild(panel("Ablation importance per variety",
+    "Each variety refit independently. Negative means the model scored better without the block — at n≈200 that is noise, not evidence against the cue.",
+    grid));
+
+  const rankRows = blocks.map((b, i) => {
+    const o = {block: b};
+    names.forEach((v, j) => { o[v] = ranks[i][j]; });
+    return o;
+  });
+  frag.appendChild(panel("Rank within each variety",
+    "1 = strongest cue. The top of the hierarchy holds across the four Portuguese varieties; the tail reorders.",
+    tableOf(cols.map(c => c.key === "block" ? c : {...c, dp: 0}), rankRows)));
+
+  frag.appendChild(panel("What each variety's model can do",
+    "Majority floor against the logit, per variety.", tableOf([
+      {key: "variety", label: "variety"},
+      {key: "majority", label: "majority", num: true},
+      {key: "logit", label: "logit", num: true},
+      {key: "n", label: "n", num: true, dp: 0},
+    ], performance)));
+
+  frag.appendChild(el("div", {class: "warnbox", html:
+    `<b>${ref} is a reference, not a fifth variety.</b> Its logit (0.339) barely clears its own majority floor (0.325), so every ${ref} importance above is noise around zero. It is in the table for contrast with the Portuguese varieties, and its column should not be ranked against theirs.`}));
+  return frag;
+};
+
+S.coefficients = () => {
+  const {features: f, classes, values} = D.coefficients;
+  const mx = Math.max(...values.flat().map(Math.abs)) || 1;
+  const rows = f.map((name, i) => {
+    const o = {feature: name};
+    classes.forEach((c, j) => { o[c] = values[i][j]; });
+    return o;
+  });
+  const cols = [{key: "feature", label: "cue"}].concat(classes.map(c => ({
+    key: c, label: c, num: true,
+    render: r => {
+      const v = r[c], a = Math.min(1, Math.abs(v) / mx) * .7;
+      const bg = v >= 0 ? `color-mix(in srgb, ${CLS[c]} ${a * 100}%, transparent)`
+                        : `color-mix(in srgb, var(--ink-3) ${a * 100}%, transparent)`;
+      return el("td", {class: "num", style: `background:${bg}`,
+        text: (v >= 0 ? "+" : "") + fmt(v, 3)});
+    }})));
+  const frag = document.createDocumentFragment();
+  frag.appendChild(panel("Standardised logit coefficients",
+    "Direction of effect for the primary model. Positive pushes toward that class; features are standardised, so magnitudes are comparable within a column.",
+    [tableOf(cols, rows), classLegend(classes)]));
+  frag.appendChild(el("div", {class: "note", html:
+    "<strong>Scale.</strong> These are log-odds on standardised cues, not macro-F1 points. They say which way a cue pushes, not how much the model needs it — that is the ablation's question."}));
+  return frag;
+};
+
+S.descriptives = () => {
+  const frag = document.createDocumentFragment();
+  const marg = D.marginal.slice().sort((a, b) => b.v - a.v);
+  frag.appendChild(panel("Marginal association with TR",
+    "Cramér's V with Bergsma's bias correction — without it, high-cardinality tense would top the ranking for the wrong reason. Descriptive only: the cues are collinear, so these overstate the weaker ones.",
+    [barsCI(marg.map(r => ({label: r.cue, v: r.v, colour: "var(--post)"})),
+      {showCI: false}),
+     tableOf([
+       {key: "cue", label: "cue"},
+       {key: "v", label: "Cramér's V", num: true},
+       {key: "chi2", label: "χ²", num: true, dp: 1},
+       {key: "dof", label: "dof", num: true, dp: 0},
+       {key: "p", label: "p", num: true, render: r => el("td", {class: "num",
+         text: r.p < 1e-4 ? r.p.toExponential(1) : fmt(r.p, 4)})},
+     ], marg)]));
+
+  const o = D.oner;
+  frag.appendChild(panel("The single best cue",
+    "One-rule: pick the most informative cue, then predict the majority class for each of its values. If the full model cannot beat this, there is no hierarchy worth reporting.",
+    el("div", {}, [
+      el("p", {class: "lede", html:
+        `Chose <code>${o.feature}</code> at <span class="mono">${fmt(o.train_accuracy, 3)}</span> training accuracy.`}),
+      tableOf([{key: "value", label: `${o.feature}`},
+               {key: "pred", label: "predicts"}],
+        Object.entries(o.rules).map(([k, v]) => ({value: k, pred: v})))])));
+  return frag;
+};
+
+S.methods = () => {
+  const frag = document.createDocumentFragment();
+  frag.appendChild(el("div", {class: "panel prose", html: D.methods}));
+  const list = el("ol", {class: "refs"});
+  D.references.forEach(r => {
+    const bits = [r.venue, r.volume && `vol. ${r.volume}`, r.pages && `pp. ${r.pages}`]
+      .filter(Boolean).join(", ");
+    const link = r.doi ? `https://doi.org/${r.doi}` : r.url;
+    list.appendChild(el("li", {id: "ref-" + r.key}, el("div", {}, [
+      el("span", {class: "refkey", text: r.key}),
+      el("span", {class: "reftitle", text: r.title}),
+      el("div", {style: "color:var(--ink-2);font-size:.92em",
+        text: `${r.author} (${r.year}). ${bits}.`}),
+      link ? el("a", {href: link, target: "_blank", rel: "noopener",
+        style: "font-size:.85em", text: r.doi ? r.doi : "link"}) : null])));
+  });
+  frag.appendChild(panel("References",
+    "Each entry was checked against CrossRef, the ACL Anthology, JMLR or the NeurIPS proceedings.",
+    list));
+  return frag;
+};
+
+/* ---------- shell ------------------------------------------------------- */
+const SECTIONS = [
+  ["hierarchy",    "Cue hierarchy",  "RQ1"],
+  ["ladder",       "Model ladder",   "B0–B5"],
+  ["tree",         "Decision tree",  "d=3"],
+  ["shap",         "SHAP",           "B5"],
+  ["variety",      "Per variety",    "RQ2"],
+  ["coefficients", "Coefficients",   "B3"],
+  ["descriptives", "Descriptives",   "01"],
+  ["methods",      "Methods",        "§"],
+];
+
+const HEAD = {
+  hierarchy: ["Cue hierarchy", "Which cue blocks the temporal relation actually depends on, measured two ways because neither alone is sound when the cues are collinear."],
+  ladder: ["Model ladder", "Each rung asks whether the next one earns its place."],
+  tree: ["Decision tree", "The shallow tree exists to be read, not to win on macro-F1."],
+  shap: ["SHAP", "Does a non-linear model agree about the ordering?"],
+  variety: ["Per variety", "Is the hierarchy stable across the four Portuguese varieties?"],
+  coefficients: ["Coefficients", "Which way each cue pushes, in the primary model."],
+  descriptives: ["Descriptives", "What the corpus looks like before any model."],
+  methods: ["Methods", "What each experiment does, what each model is, and why."],
+};
+
+const rail = document.getElementById("rail"), main = document.getElementById("main");
+let current = null;
+
+function show(key) {
+  current = key;
+  [...rail.children].forEach(b =>
+    b.setAttribute("aria-selected", String(b.dataset.k === key)));
+  main.textContent = "";
+  const [h, lede] = HEAD[key];
+  const sec = el("section", {}, [el("h2", {text: h}),
+    el("p", {class: "lede", text: lede})]);
+  sec.appendChild(S[key]());
+  main.appendChild(sec);
+  try { localStorage.setItem("dripps.tab", key); } catch (e) { /* private mode */ }
+}
+
+SECTIONS.forEach(([k, label, n]) => rail.appendChild(el("button", {
+  text: "", role: "tab", "data-k": k, "aria-selected": "false",
+  onclick: () => show(k)}, [
+  el("span", {text: label}), el("span", {class: "n", text: n})])));
+
+const m = D.meta;
+document.getElementById("standfirst").textContent =
+  `${m.n_rows} annotated clause pairs across ${m.varieties.length} Portuguese ` +
+  `varieties, ${m.n_features} binary cues in six blocks, three temporal ` +
+  `relations. Every interval here comes from resampling sentence groups.`;
+document.getElementById("stamp").append(
+  el("span", {text: `generated ${m.generated}`}),
+  el("span", {text: `seed ${m.seed}`}),
+  el("span", {text: `${m.n_total} corpus rows → ${m.n_rows} analysed`}));
+
+const tiles = el("div", {class: "tiles"});
+const best = D.baselines.filter(r => !/circular/.test(r.model))
+  .sort((a, b) => b.macro_f1 - a.macro_f1)[0];
+const top = D.cue_importance.slice()
+  .sort((a, b) => b.importance_ablation - a.importance_ablation)[0];
+const zero = D.cue_importance.filter(r =>
+  r.ci_lo_ablation != null && r.ci_lo_ablation < 0 && r.ci_hi_ablation > 0).length;
+[["Best model", best.model.replace(/^B\d\s/, ""), `macro-F1 ${fmt(best.macro_f1, 3)}`],
+ ["Strongest cue", top.block, `${fmt(top.importance_ablation, 3)} macro-F1 drop`],
+ ["Blocks at zero", String(zero) + " of 6", "ablation CI crosses zero"],
+ ["Majority floor", fmt(D.baselines.find(r => /majority/.test(r.model)).macro_f1, 3),
+  "what any result must beat"],
+].forEach(([k, v, s]) => tiles.appendChild(el("div", {class: "tile"}, [
+  el("div", {class: "k", text: k}), el("div", {class: "v", text: v}),
+  el("div", {class: "s", text: s})])));
+document.querySelector(".masthead").after(tiles);
+
+let start = "hierarchy";
+try {
+  const saved = localStorage.getItem("dripps.tab");
+  if (saved && HEAD[saved]) start = saved;
+} catch (e) { /* private mode */ }
+show(start);
+</script>

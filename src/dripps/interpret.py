@@ -197,3 +197,40 @@ def tree_rules(tree, feature_names, class_names, *, max_depth=None) -> str:
         tree, feature_names=list(feature_names), max_depth=max_depth or 10,
         class_names=list(class_names), decimals=2,
     )
+
+
+def tree_structure(tree, feature_names, class_names, *, X=None, ids=None) -> dict:
+    """Node-by-node form of the same tree ``tree_rules`` renders as text.
+
+    The text export is what the paper quotes; this carries what the text drops --
+    sample counts, the class distribution at every node and, given ``X`` and
+    ``ids``, the rows landing in each leaf -- so a reader can see which sentences
+    a rule actually covers.
+    """
+    t = tree.tree_
+    feature_names, class_names = list(feature_names), list(class_names)
+
+    rows_by_leaf: dict[int, list] = {}
+    if X is not None and ids is not None:
+        for node, rid in zip(tree.apply(X), list(ids)):
+            rows_by_leaf.setdefault(int(node), []).append(rid)
+
+    nodes = []
+    for i in range(t.node_count):
+        leaf = t.children_left[i] == -1
+        # tree_.value holds class *proportions*, not counts, in current sklearn
+        counts = (t.value[i][0] * t.n_node_samples[i]).round().astype(int).tolist()
+        nodes.append({
+            "id": i,
+            "is_leaf": bool(leaf),
+            "feature": None if leaf else feature_names[t.feature[i]],
+            "threshold": None if leaf else float(t.threshold[i]),
+            "n_samples": int(t.n_node_samples[i]),
+            "counts": counts,
+            "predicted": class_names[int(np.argmax(counts))],
+            "impurity": float(t.impurity[i]),
+            "left": None if leaf else int(t.children_left[i]),
+            "right": None if leaf else int(t.children_right[i]),
+            "rows": rows_by_leaf.get(i, []),
+        })
+    return {"classes": class_names, "nodes": nodes}
