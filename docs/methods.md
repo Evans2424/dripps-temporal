@@ -6,11 +6,11 @@ checked against a primary record.
 
 ## The question
 
-DRIPPS annotates 993 sentences across five varieties for the temporal relation
+DRIPPS annotates 1,143 clauses (993 from the original export plus a 150-clause second batch) across five varieties for the temporal relation
 (`TR`) holding in a clause pair: `Ant` (anterior), `Post` (posterior) or `Simul`
 (simultaneous). The project asks which cues carry that relation, whether they
 form a hierarchy, and whether the hierarchy is stable across four Portuguese
-varieties. The Portuguese analysis set is 793 rows; British English is a
+varieties. The Portuguese analysis set is 943 rows; British English is a
 contrastive reference, not a modelled variety.
 
 Cues are grouped into six blocks, because individual dummy columns are not the
@@ -60,7 +60,7 @@ logit coefficients; and a depth-3 tree whose splits can be read verbatim.
 
 ### `04_variety_hierarchies.py` — is the hierarchy stable (RQ2)
 
-Refits per variety and compares rankings. Descriptive only: at n≈200 per variety
+Refits per variety and compares rankings. Descriptive only: at n≈200–250 per variety
 the separate fits overfit and the rankings are not strictly comparable. The
 confirmatory analysis is a pooled hierarchical model that has not been built yet.
 

@@ -10,8 +10,8 @@ from data import (ASPECT_NAMES, COLORS, READINGS, corpus, features_for, logit_co
 
 def _simulator():
     st.subheader("What-if: build a clause and watch the reading")
-    st.caption("B3 fitted on all 793 Portuguese clauses. Change one cue at a time to see its push.")
     pt = corpus().query("is_portuguese")
+    st.caption(f"B3 fitted on all {len(pt)} Portuguese clauses. Change one cue at a time to see its push.")
     tenses = pt["TMC"].value_counts().index.tolist()
     c = st.columns(5)
     atmc = c[0].selectbox("Main-clause aspect", ["Culm", "Pro", "CP", "St", "Pon"],

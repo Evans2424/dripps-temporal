@@ -18,6 +18,8 @@ from . import schema
 #: Anchored to the repo, not the process cwd, so imports work from anywhere.
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RAW = ROOT / "data/raw/dripps_full.csv"
+#: Second annotation batch, converted by experiments/00_ingest.py (IDs carry a "V").
+VIOLETA_RAW = ROOT / "data/raw/dripps_violeta.csv"
 
 
 class SchemaError(ValueError):
@@ -76,14 +78,17 @@ def _variety(series: pd.Series) -> pd.DataFrame:
     )
 
 
-def load(path: str | Path = DEFAULT_RAW, *, strict: bool = True) -> pd.DataFrame:
-    """Load the export, validate every label, and attach variety metadata.
+def load(path: str | Path | None = None, *, strict: bool = True) -> pd.DataFrame:
+    """Load the export (both batches by default), validate every label, and
+    attach variety metadata.
 
-    Adds ``variety``, ``language``, ``is_portuguese``, and ``sentence_group``
+    Adds ``batch`` (``violeta`` for the second annotation batch, else
+    ``original``), ``variety``, ``language``, ``is_portuguese``, and ``sentence_group``
     (a stable integer id shared by the duplicated rows of multi-APC sentences,
     used as the grouping key for every cross-validation split).
     """
-    df = _read_unquoted(path)
+    paths = [path] if path else [DEFAULT_RAW, VIOLETA_RAW]
+    df = pd.concat([_read_unquoted(p) for p in paths], ignore_index=True)
 
     missing = [c for c in schema.RAW_COLUMNS if c not in df.columns]
     if missing:
@@ -96,6 +101,7 @@ def load(path: str | Path = DEFAULT_RAW, *, strict: bool = True) -> pd.DataFrame
         _validate(df)
 
     df = pd.concat([df, _variety(df[schema.ID])], axis=1)
+    df["batch"] = df[schema.ID].str.match(r"PT[A-Z]{2}V\d+$").map({True: "violeta", False: "original"})
     # multi-APC sentences are duplicated across rows; group so CV never splits them
     df["sentence_norm"] = df[schema.SENTENCE].map(normalize_text)
     df["sentence_group"] = df.groupby("sentence_norm", sort=False).ngroup()
@@ -122,7 +128,7 @@ def _validate(df: pd.DataFrame) -> None:
         "ATSC": schema.ASPECT_LABELS,
         "TMC": schema.TMC_LABELS,
         "DR": schema.DR_LABELS,
-        "SR-SC": schema.SR_LABELS,
+        "SR-SC": (*schema.SR_LABELS, ""),  # "" = not annotated (second batch)
     }
     problems = []
     for col, allowed in checks.items():

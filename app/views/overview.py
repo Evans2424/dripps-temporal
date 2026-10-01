@@ -4,44 +4,38 @@ from data import BLOCK_NAMES, corpus, table
 
 
 def render():
-    st.title("What carries the temporal reading of a participial clause?")
-    st.caption("DRIPPS cue hierarchy · adverbial perfect participial clauses (*tendo* / *having* + participle)")
+    st.title("Cues to the temporal reading of adverbial perfect participial clauses")
+    st.caption("DRIPPS corpus · Portuguese (EP, BP, AP, MP); British English as reference only")
 
-    df = corpus()
-    pt = df[df["is_portuguese"]]
-    c = st.columns(4)
-    c[0].metric("Portuguese clauses", len(pt), help="EP, BP, AP, MP. British English is a reference only.")
+    pt = corpus().query("is_portuguese")
+    base, imp = table("baselines.csv"), table("cue_importance.csv")
+    c = st.columns(3)
+    c[0].metric("Portuguese clauses", len(pt))
     c[1].metric("sentences", pt["sentence_group"].nunique())
-    c[2].metric("with no connector", f"{(df['CNT'].str.strip() == '').mean():.1%}",
-                help="Across all 993 clauses: the reading must be inferred from other cues.")
-    base = table("baselines.csv")
-    if base is not None:
-        b3 = base.set_index("model").loc["B3 logit"]
-        c[3].metric("B3 macro-F1", f"{b3.macro_f1:.3f}",
-                    help=f"95% interval [{b3.ci_lo:.3f}, {b3.ci_hi:.3f}], resampling sentences")
+    if base is None or imp is None:
+        return
+    f1 = base.set_index("model")
+    b3 = f1.loc["B3 logit"]
+    c[2].metric("B3 macro-F1", f"{b3.macro_f1:.3f}", help=f"95% CI [{b3.ci_lo:.3f}, {b3.ci_hi:.3f}]")
 
-    st.subheader("Research questions")
-    q = st.columns(3)
-    q[0].markdown("**RQ1 · Which cues, in what order?**  \nRanking with intervals, four Portuguese varieties pooled. *Answered.*")
-    q[1].markdown("**RQ2 · Do the varieties differ?**  \nSame cues, different weights, once base rates are separated. *Descriptive only; needs B6.*")
-    q[2].markdown("**RQ3 · Does a model transfer?**  \nTrain on three varieties, test on the fourth, then English. *Not started.*")
+    st.subheader("RQ1: cue hierarchy")
+    imp = imp.sort_values("importance_ablation", ascending=False)
+    st.dataframe(
+        imp.assign(cue=imp["block"].map(BLOCK_NAMES))[["cue", "importance_ablation", "ci_lo_ablation", "ci_hi_ablation"]],
+        hide_index=True,
+        column_config={"cue": "cue block", "importance_ablation": st.column_config.NumberColumn("Δ macro-F1", format="%.3f"),
+                       "ci_lo_ablation": st.column_config.NumberColumn("CI low", format="%.3f"),
+                       "ci_hi_ablation": st.column_config.NumberColumn("CI high", format="%.3f")})
+    st.caption("Drop in out-of-fold macro-F1 when the block is removed and the model refit; "
+               "95% CI from resampling sentences.")
 
-    st.subheader("Main findings so far")
-    imp = table("cue_importance.csv")
-    if imp is not None:
-        imp = imp.sort_values("importance_ablation", ascending=False)
-        lines = [f"{i + 1}. **{BLOCK_NAMES[r.block]}**: {r.importance_ablation:.3f} "
-                 f"[{r.ci_lo_ablation:.3f}, {r.ci_hi_ablation:.3f}]"
-                 for i, r in enumerate(imp.itertuples())]
-        left, right = st.columns([1, 1])
-        left.markdown("**Cue hierarchy** (drop in macro-F1 when the block is removed and the model refit)  \n"
-                      + "  \n".join(lines))
-        right.markdown(
-            "- **Main-clause aspect** sets the default reading: telic → posterior, durative → simultaneous.\n"
-            "- **Tense is not a stand-in for aspect**: removing it still costs 0.071 with aspect in the model.\n"
-            "- **The participial clause** matters through its position; its own aspect adds 0.001.\n"
-            "- **No sign of interactions** at this size: forest and XGBoost do not beat the logit.\n"
-            "- **Varieties** differ in base rates; whether they weight cues differently is open (B6)."
-        )
-    st.info("Use the sidebar to follow the same path as the team briefing: data → evaluation → models → results.",
-            icon=":material/route:")
+    v = imp.set_index("block")
+    ens = f1.loc[["B5 forest", "B5 xgboost"], "macro_f1"]
+    st.markdown(
+        "- Main-clause aspect and tense carry the reading; clause position is third.\n"
+        f"- Participial-clause aspect: Δ = {v.importance_ablation['aspect_sc']:.3f} "
+        f"[{v.ci_lo_ablation['aspect_sc']:.3f}, {v.ci_hi_ablation['aspect_sc']:.3f}].\n"
+        f"- Random forest ({ens.iloc[0]:.3f}) and XGBoost ({ens.iloc[1]:.3f}) do not exceed the additive logit "
+        f"({b3.macro_f1:.3f}): no evidence of cue interactions.\n"
+        "- RQ2 (variety differences) is descriptive only; RQ3 (transfer) is not started."
+    )

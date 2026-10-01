@@ -2,6 +2,8 @@
 
 ## Context
 
+> **Status.** The figures in this plan describe the original 993-row export. A 150-sentence second batch has since been added (1,143 rows; see `docs/ANNOTATION_SCHEME.md`), and current numbers live in `docs/FINDINGS.md` and `results/tables/`.
+
 A COLING 2027 **long paper (8 pages)** using the DRIPPS corpus (993 annotated adverbial perfect participial clauses, five varieties) to answer:
 
 - **RQ1** — Which linguistic cues drive the temporal interpretation (anteriority / posteriority / simultaneity) of adverbial perfect participial clauses (APC), and what is their *relative* contribution? → cue hierarchies.

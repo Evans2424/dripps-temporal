@@ -8,7 +8,8 @@ from data import BLOCK_NAMES, corpus, table
 
 def render():
     st.title("RQ2 · the four Portuguese varieties")
-    st.warning("Descriptive only: five separate fits of about 200 sentences. Negative importances mean dropping "
+    sizes = corpus().groupby("variety").size()
+    st.warning(f"Descriptive only: five separate fits of {sizes.min()}–{sizes.max()} sentences. Negative importances mean dropping "
                "a cue helped, which is overfitting. The confirmatory answer needs the pooled model (B6).",
                icon=":material/warning:")
     df = corpus()

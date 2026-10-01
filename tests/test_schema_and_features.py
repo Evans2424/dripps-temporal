@@ -62,10 +62,20 @@ def test_english_and_portuguese_tense_labels_are_disjoint_except_shared(df):
 # --- data integrity ----------------------------------------------------------
 
 def test_all_rows_parsed(df):
-    assert len(df) == 993
+    assert len(df) == 1143
     assert df.variety.value_counts().to_dict() == {
-        "EP": 200, "AP": 200, "MP": 200, "BE": 200, "BP": 193
+        "EP": 250, "AP": 250, "MP": 250, "BE": 200, "BP": 193
     }
+
+
+def test_second_batch_ids_are_distinct_and_tagged(df):
+    """The Violeta batch carries a 'V' ID prefix, has no SR-SC, and is 50 per variety."""
+    v = df[df.batch == "violeta"]
+    assert len(v) == 150 and df.ID.is_unique
+    assert v.ID.str.match(r"PT(EU|AO|MZ)V\d+$").all()
+    assert not df.loc[df.batch == "original", "ID"].str.contains("V").any()
+    assert v.variety.value_counts().to_dict() == {"EP": 50, "AP": 50, "MP": 50}
+    assert (v["SR-SC"] == "").all() and (df.loc[df.batch == "original", "SR-SC"] != "").all()
 
 
 def test_exotic_whitespace_is_normalized(df):
@@ -78,7 +88,7 @@ def test_apc_auxiliary_is_recoverable(df):
     """The APC span is not annotated; it is recovered from the auxiliary."""
     pt = df[df.is_portuguese]["sentence_norm"]
     en = df[~df.is_portuguese]["sentence_norm"]
-    assert pt.str.contains(r"\btendo\b", case=False).sum() == 793   # 100%
+    assert pt.str.contains(r"\btendo\b", case=False).sum() == 943   # 100%
     assert en.str.contains(r"\bhaving\b", case=False).sum() == 199  # 199/200
 
 

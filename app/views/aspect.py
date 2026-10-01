@@ -3,7 +3,7 @@ import pandas as pd
 import streamlit as st
 
 from charts import reading_color
-from data import ASPECT_NAMES, READINGS, aspect_adjusted, corpus
+from data import ASPECT_NAMES, READINGS, aspect_adjusted, corpus, table
 
 ORDER = ["Culmination", "Process", "Culminated process", "State"]
 
@@ -57,6 +57,12 @@ def render():
             st.dataframe(tbl.pivot(index="class", columns="reading", values="estimate").reindex(ORDER),
                          )
 
+    try:  # widest gap between aspectual classes, per clause, in model-adjusted probability
+        adj_all = aspect_adjusted().query("aspect_class != 'Pon'")
+        sp = adj_all.groupby(["clause", "reading"])["prob"].agg(lambda s: s.max() - s.min()).groupby("clause").max()
+        sc = table("cue_importance.csv").set_index("block").loc["aspect_sc"]
+    except Exception:
+        sp = None
     st.markdown(
         "**How to read it.** *Raw counts* are the share of clauses the annotators labelled with each reading. "
         "*Model-adjusted* gives every clause the class in turn, keeps its real tense, position and other "
@@ -64,6 +70,7 @@ def render():
         "with the other cues held as they are. Intervals refit the model on resampled sentences.\n\n"
         "**What changes.** Raw, states look anterior; that is tense (many states are present tense). "
         "Adjusted, states lean simultaneous like processes, as the durativity claim predicts. "
-        "The participial clause's classes stay much closer together: at most 17 points apart, against 61 "
-        "for the main clause, and removing that block costs 0.001 macro-F1."
-    )
+        f"The participial clause's classes stay much closer together: at most {sp['sc'] * 100:.0f} points apart, "
+        f"against {sp['mc'] * 100:.0f} for the main clause, and removing that block costs {sc.importance_ablation:.3f} "
+        f"macro-F1 (95% interval [{sc.ci_lo_ablation:.3f}, {sc.ci_hi_ablation:.3f}])."
+    ) if sp is not None else None

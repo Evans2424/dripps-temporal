@@ -4,7 +4,7 @@ import streamlit as st
 from sklearn.metrics import confusion_matrix, f1_score
 
 from charts import interval_dots
-from data import READINGS, model_labels, oof, table
+from data import READINGS, corpus, model_labels, oof, table
 
 ROLE = {
     "B0 majority": "floor: the base rate alone",
@@ -14,6 +14,7 @@ ROLE = {
     "B5 forest": "does flexibility find interactions the logit misses?",
     "B5 xgboost": "same question, boosted trees",
     "circular (DR+SR-SC)": "leakage check, not a result",
+    "circular control: B3 on same rows": "B3 on the rows the circular bound can use",
 }
 
 
@@ -21,17 +22,20 @@ def render():
     st.title("Model ladder")
     st.caption("Every rung scored the same way: out of fold, sentences kept whole, 10 repeated 5-fold splits, "
                "95% interval from 2,000 resamples of sentences.")
+    pt = corpus().query("is_portuguese")
+    sizes = pt.groupby("sentence_group").size()
+    multi, n_sent = sizes[sizes > 1], len(sizes)
     with st.expander("How every score is measured"):
         st.markdown(
-            "1. **Sentences stay whole.** 17 Portuguese sentences contain two or more participial clauses "
-            "(37 rows) with the same main clause; their rows always go to the same fold, so no sentence is "
-            "tested on something it was trained on. Unit of analysis: 773 sentences.\n"
+            f"1. **Sentences stay whole.** {len(multi)} Portuguese sentences contain two or more participial clauses "
+            f"({multi.sum()} rows) with the same main clause; their rows always go to the same fold, so no sentence is "
+            f"tested on something it was trained on. Unit of analysis: {n_sent} sentences.\n"
             "2. **Five folds, rotated.** Train on four, predict the fifth, rotate: every sentence gets one "
             "prediction from a model that never saw it. Each fold keeps the Ant/Post/Simul mix. For the ladder "
             "the whole cut is redone 10 times.\n"
-            "3. **Resample sentences for the interval.** Draw 773 sentences with replacement 2,000 times, "
+            f"3. **Resample sentences for the interval.** Draw {n_sent} sentences with replacement 2,000 times, "
             "recompute macro-F1, keep the middle 95%. Comparisons are paired: both models on the same draws.\n\n"
-            "Fold-to-fold spread is not used: every fold reuses the same sentences, so it is about six times "
+            "Fold-to-fold spread is not used: every fold reuses the same sentences, so it is several times "
             "narrower and measures the split, not the data.")
     base = table("baselines.csv")
     if base is not None:

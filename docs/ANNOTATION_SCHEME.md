@@ -59,7 +59,8 @@ They are not merely correlated with `TR`; they are partly **defined** by it.
 co-occurs with `Simul`, and `conjunction` / `elaboration` / `exemplification` /
 `manner` are always `Simul`.
 
-A model given these columns reaches macro-F1 0.750 while explaining nothing.
+A model given these columns reaches macro-F1 0.750 while explaining nothing
+(fitted on the 993 rows that have `SR-SC`; the honest cues score 0.736 on the same rows).
 That number is reported once, as an explicit circular upper bound, and the
 columns are otherwise blocked by `dripps.leakage.assert_no_leakage`.
 
@@ -99,9 +100,9 @@ both clauses*. The last clause is an interaction claim, so `both_telic` and
 
 ## Tense → TAM bundles
 
-`TMC` has **31 distinct labels**, and the Portuguese and English inventories are
+`TMC` has **32 distinct labels**, and the Portuguese and English inventories are
 nearly disjoint (`PP`/`Pres-Ind`/`PIMP-Ind`… vs `Pst`/`Pres`/`PresP`…). A
-31-level categorical is neither estimable at n≈200 per variety nor comparable
+32-level categorical is neither estimable at n≈200–250 per variety nor comparable
 across languages, so each label maps to six orthogonal dimensions:
 
 `tense` (past / present / future / nonfinite, *past* is the reference level),
@@ -147,7 +148,27 @@ third-ranked cue, pointing toward anteriority.
 
 ## Connector
 
-Present in only 4.9% of the corpus, and unevenly: **BP 17.6%** (almost all
-*mesmo*) against ~1% in EP/AP/MP and 5% in BE (*despite*, *after*, *although*).
+Present in only 4.8% of the corpus, and unevenly: **BP 17.6%** (almost all
+*mesmo*) against 0.4–2.4% in EP/AP/MP and 5% in BE (*despite*, *after*, *although*).
 Modelled as presence/absence, not as a lexical item. Conclusions about EP/AP/MP
-connectors are "not attested here", never "connectors do not matter".
+connectors are "too rare to estimate here" (4, 6 and 1 clauses), never "connectors do not matter".
+
+## Second annotation batch
+
+150 Portuguese sentences (50 each EP, AP, MP; none for BP) arrived as `Dados_Violeta.xlsx`, one sheet per
+variety, and are converted by `experiments/00_ingest.py` into `data/raw/dripps_violeta.csv`. IDs carry a `V`
+(`PTEUV1`, `PTAOV1`, `PTMZV1`), so the batch is readable from the ID and cannot collide with the original export.
+`io.load` exposes it as `batch == "violeta"`. None of the 150 sentences occurs in the original export, and none
+contains more than one `tendo`, so each is one row.
+
+What differs from the original export, and how it was handled:
+
+- **No `SR-SC`.** The field is empty. It is never a model feature; the leakage statistics, the circular upper
+  bound and the Leakage tab use only the 993 rows that have it.
+- **`DR` capitalised** (`Asynchrony`); lower-cased on ingest.
+- **`Futuro Perfeito`** (1 row) is the future perfect and is mapped to `Fut-C`.
+- **`PstPro`** (1 row, MZ: *estavam a usar*) is a new tense label, coded past · progressive, the same bundle as
+  the English `PstCont`. This is a coding decision made at ingest, not one the annotator stated.
+- **Almost all final** (141 of 150) and almost no connectors (6, all *mesmo*), like the original EP, AP and MP.
+- **No agreement figure.** Nothing in the workbook says how reliable these annotations are against the original
+  ones, so pooled results should be read with that in mind.

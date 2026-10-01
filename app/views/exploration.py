@@ -36,7 +36,8 @@ def render():
     with t1:
         c = st.columns(4)
         c[0].metric("Portuguese clauses", len(pt))
-        c[1].metric("per variety", "≈200")
+        n_var = pt.groupby("variety").size()
+        c[1].metric("per variety", f"{n_var.min()}–{n_var.max()}")
         smallest = pd.crosstab(pt["variety"], pt["TR"]).stack().idxmin()
         c[2].metric("smallest reading group", int(pd.crosstab(pt["variety"], pt["TR"]).stack().min()),
                     help=f"{smallest[1]} in {smallest[0]}")
@@ -47,7 +48,8 @@ def render():
         st.markdown(
             "- Posterior leads in EP, AP and MP; **BP is anteriority-dominant**; English is 95% anterior → "
             "**macro-F1, not accuracy**, and English as a reference only.\n"
-            "- About 5 anterior clauses per MP test fold → **per-variety models are noisy**; pool the varieties (B6)."
+            f"- About {round(int(pd.crosstab(pt['variety'], pt['TR']).stack().min()) / 5)} {smallest[1]} clauses per "
+            f"{smallest[0]} test fold → **per-variety models are noisy**; pool the varieties (B6)."
         )
 
     with t2:
@@ -112,8 +114,9 @@ def render():
     with t5:
         st.markdown("Two annotated columns partly **encode the answer**, so no model may use them.")
         c = st.columns(2)
+        ann = pt[pt["SR-SC"] != ""]  # the second batch has no SR-SC
         for box, col in zip(c, ["SR-SC", "DR"]):
-            ct = pd.crosstab(pt[col], pt["TR"]).reindex(columns=READINGS, fill_value=0)
+            ct = pd.crosstab(ann[col], ann["TR"]).reindex(columns=READINGS, fill_value=0)
             box.markdown(f"**{col}** × reading")
             box.dataframe(ct)
         st.caption("*before* is always Ant and *after* always Post; *asynchrony* never co-occurs with Simul. "

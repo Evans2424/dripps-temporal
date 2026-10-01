@@ -1,8 +1,12 @@
 PY := .venv/bin/python
 
-.PHONY: all test audit baselines hierarchy varieties explain viewer app clean
+.PHONY: all ingest test audit baselines hierarchy varieties explain viewer app clean
 
-all: test audit baselines hierarchy varieties explain viewer
+all: ingest test audit baselines hierarchy varieties explain viewer
+
+# converts data/raw/archive/Dados_Violeta.xlsx -> data/raw/dripps_violeta.csv
+ingest:
+	$(PY) experiments/00_ingest.py
 
 test:
 	$(PY) -m pytest tests/ -q

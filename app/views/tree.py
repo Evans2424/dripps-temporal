@@ -35,7 +35,7 @@ def _dot(nodes: list[dict], selected: int | None) -> str:
 
 def render():
     st.title("B4 · the decision tree, read as rules")
-    st.caption("Depth-3 tree fit on all 793 Portuguese clauses: each box asks one yes/no question about one "
+    st.caption(f"Depth-3 tree fit on all {corpus()['is_portuguese'].sum()} Portuguese clauses: each box asks one yes/no question about one "
                "cue. Counts are Ant / Post / Simul. Pick a leaf to read the sentences it covers.")
     tree = tree_structure()
     nodes = tree["nodes"]

@@ -56,6 +56,10 @@ VARIETY_BY_PREFIX = {
     "PTBR": ("BP", "pt", True),
     "PTAO": ("AP", "pt", True),
     "PTMZ": ("MP", "pt", True),
+    # second batch (Dados_Violeta.xlsx): same varieties, "V" marks the batch
+    "PTEUV": ("EP", "pt", True),
+    "PTAOV": ("AP", "pt", True),
+    "PTMZV": ("MP", "pt", True),
     "ENBE": ("BE", "en", False),
 }
 
@@ -120,6 +124,7 @@ TAM_BUNDLE = {
     # -- Portuguese: progressive periphrases -----------------------------------
     "PresPro":        _tam("present", progressive=True),                # está a fazer (EP)
     "PresPro-G":      _tam("present", progressive=True),                # está fazendo (BP)
+    "PstPro":         _tam("past",    progressive=True),                # estava a fazer (Violeta batch)
     "ir(Pres)+Ger":   _tam("present", progressive=True),                # vai fazendo
     "ir(PP)+Ger":     _tam("past",    perfective=True, progressive=True),
     # -- Portuguese: prospective periphrases -----------------------------------

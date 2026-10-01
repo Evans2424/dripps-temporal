@@ -54,7 +54,7 @@ def _table(name: str, kw: tuple) -> pd.DataFrame:
 
 @st.cache_data(show_spinner=False)
 def corpus() -> pd.DataFrame:
-    """All 993 rows, with readable cue columns added for filtering."""
+    """Every row, with readable cue columns added for filtering."""
     df = io.load().copy()
     df["connector"] = np.where(df["CNT"].str.strip() != "", df["CNT"].str.strip(), "none")
     df["position3"] = df["Position"]

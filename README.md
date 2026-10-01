@@ -4,7 +4,7 @@ Code for a COLING 2027 submission analysing how the temporal reading
 (anteriority / posteriority / simultaneity) of adverbial perfect participial
 clauses is cued across four varieties of Portuguese, using the
 [DRIPPS](https://github.com/johnycordeiro/DRIPPS) corpus (993 annotated
-sentences; Silvano et al., LDK 2023).
+sentences, plus a 150-sentence second batch; Silvano et al., LDK 2023).
 
 ## Questions
 
@@ -31,9 +31,9 @@ make all
 | `src/dripps/results.py` | one place that locates and reads `results/tables/` for the viewer and the app |
 | `src/dripps/interpret.py` | block ablation/permutation importance, coefficients, tree rules and structure |
 | `src/dripps/explain.py` | TreeSHAP for the two ensemble rungs |
-| `experiments/` | `01_audit` `02_baselines` `03_cue_hierarchy` `04_variety_hierarchies` `05_explain` `06_viewer` |
+| `experiments/` | `00_ingest` (second batch, xlsx → csv) `01_audit` `02_baselines` `03_cue_hierarchy` `04_variety_hierarchies` `05_explain` `06_viewer` |
 | `docs/` | [plan](docs/PROJECT_PLAN.md) · [scheme](docs/ANNOTATION_SCHEME.md) · [audit](docs/DATA_AUDIT.md) · [findings](docs/FINDINGS.md) · [linguistics](docs/LINGUISTICS.md) · [methods](docs/methods.md) · [deploy](docs/DEPLOY.md) · [refs](docs/references.bib) |
-| `results/viewer.html` | generated dashboard — `make viewer`, then open it in a browser |
+| `results/viewer.html` | generated standalone dashboard — `make viewer`; the app's *Standalone viewer* page builds and embeds the same file |
 | `app/` | interactive explorer (Streamlit): corpus filter with mispredicted-only view, model pages, error analysis. `make app`, then open http://localhost:8501; to share it, see [deploy](docs/DEPLOY.md) |
 
 ## Three things that will bite you
@@ -44,7 +44,7 @@ make all
 2. **Multi-APC sentences are duplicated across rows** — 26 sentences, 55 rows.
    Split on `sentence_group` or the folds leak.
 3. **The export is not valid CSV.** 17 sentences contain a literal `;` and
-   nothing is quoted; 557 contain non-breaking spaces. `dripps.io` handles both.
+   nothing is quoted; 557 of the original 993 contain non-breaking spaces. `dripps.io` handles both.
    Do not `pd.read_csv` it directly.
 
 ## Data
@@ -52,3 +52,9 @@ make all
 `data/raw/dripps_full.csv` is exported from the DRIPPS desktop application.
 The corpus is by Silvano, Cordeiro, Leal & Pais and should be cited as
 [`2023.ldk-1.51`](https://aclanthology.org/2023.ldk-1.51/).
+
+`data/raw/dripps_full.csv` is the original export (993 rows). `dripps_violeta.csv` is a
+second batch of 150 Portuguese sentences (50 each EP, AP, MP; IDs `PTEUV…`, `PTAOV…`,
+`PTMZV…`) converted from `data/raw/archive/Dados_Violeta.xlsx` by `make ingest`. `io.load`
+reads both and adds a `batch` column. The batch has no `SR-SC` annotation; see
+[the annotation scheme](docs/ANNOTATION_SCHEME.md#second-annotation-batch).

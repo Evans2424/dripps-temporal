@@ -35,7 +35,7 @@ def test_auxiliary_pattern_actually_matches():
 
 def test_span_recovery_counts(df):
     aux = io.has_apc_auxiliary(df)
-    assert aux[df.is_portuguese].sum() == 793
+    assert aux[df.is_portuguese].sum() == 943
     assert aux[~df.is_portuguese].sum() == 199
     assert (io.count_apc_auxiliary(df) > 1).sum() == 24
 
@@ -154,7 +154,7 @@ def test_logit_coefficients_handle_two_classes():
 def test_default_path_is_repo_anchored(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     assert io.DEFAULT_RAW.is_absolute() and io.DEFAULT_RAW.exists()
-    assert len(io.load()) == 993
+    assert len(io.load()) == 1143
 
 
 # --- tree serialisation must describe the same tree export_text prints -------
@@ -371,7 +371,7 @@ def test_adjusted_class_probabilities_are_distributions_and_move_only_aspect(df)
 
 @pytest.mark.parametrize("page", [
     "overview", "corpus_explorer", "exploration", "models_page", "logit", "tree",
-    "hierarchy", "aspect", "shap_page", "varieties", "errors", "methods",
+    "hierarchy", "aspect", "shap_page", "varieties", "errors", "methods", "viewer",
 ])
 def test_app_page_renders_without_exception(page):
     testing = pytest.importorskip("streamlit.testing.v1")
@@ -412,6 +412,6 @@ def test_deployed_app_pins_match_the_pipeline_and_its_data_is_tracked():
     for banned in ("shap", "numba", "statsmodels"):
         assert banned not in app, f"{banned} is not imported by the app; keep the cloud install light"
 
-    needed = ["results/tables/shap_forest.csv", "results/tables/shap_xgboost.csv", "data/raw/dripps_full.csv"]
+    needed = ["results/tables/shap_forest.csv", "results/tables/shap_xgboost.csv", "data/raw/dripps_full.csv", "data/raw/dripps_violeta.csv"]
     ignored = subprocess.run(["git", "check-ignore", *needed], cwd=root, capture_output=True, text=True)
     assert ignored.stdout.strip() == "", f"the deployed app reads gitignored files: {ignored.stdout}"

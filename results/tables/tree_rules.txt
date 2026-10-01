@@ -1,8 +1,8 @@
 |--- mc_durative <= 0.50
 |   |--- pos_nonfinal <= 0.50
-|   |   |--- sc_durative <= 0.50
+|   |   |--- mc_perfective <= 0.50
 |   |   |   |--- class: Post
-|   |   |--- sc_durative >  0.50
+|   |   |--- mc_perfective >  0.50
 |   |   |   |--- class: Post
 |   |--- pos_nonfinal >  0.50
 |   |   |--- class: Ant
@@ -13,7 +13,7 @@
 |   |   |--- pos_nonfinal >  0.50
 |   |   |   |--- class: Ant
 |   |--- tense_present >  0.50
-|   |   |--- sc_telic <= 0.50
+|   |   |--- mc_dynamic <= 0.50
 |   |   |   |--- class: Ant
-|   |   |--- sc_telic >  0.50
-|   |   |   |--- class: Ant
+|   |   |--- mc_dynamic >  0.50
+|   |   |   |--- class: Simul

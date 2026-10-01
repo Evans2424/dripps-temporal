@@ -39,9 +39,18 @@ def main() -> None:
         ("encode", OneHotEncoder(sparse_output=False, handle_unknown="ignore")),
         ("clf", models.b3_logit()),
     ])
-    X_circ = df[list(circular_columns())]
-    res = evaluate.score(circ, X_circ, y, g, label="circular (DR+SR-SC)")
+    # only rows annotated for SR-SC (the second batch has none), so the bound
+    # stays comparable to the original export
+    m = (df["SR-SC"] != "").to_numpy()
+    X_circ = df[list(circular_columns())][m]
+    res = evaluate.score(circ, X_circ, y[m], g[m], label="circular (DR+SR-SC)")
     rows.append({k: v for k, v in res.items() if not k.startswith("_")})
+    # same rows, honest cues: the fair comparator for the circular bound, since
+    # the ladder above also scores the second batch, which the bound cannot see
+    ctrl = evaluate.score(models.b3_logit(), X[m], y[m], g[m], label="circular control: B3 on same rows")
+    rows.append({k: v for k, v in ctrl.items() if not k.startswith("_")})
+    print(f"\n  {'circ. control':<14} macro-F1 = {ctrl['macro_f1']:.3f} "
+          f"[{ctrl['ci_lo']:.3f}, {ctrl['ci_hi']:.3f}]   <- B3 on the {m.sum()} rows the bound can use")
     print(f"\n  {'circular':<14} macro-F1 = {res['macro_f1']:.3f} "
           f"[{res['ci_lo']:.3f}, {res['ci_hi']:.3f}]   <- leakage demo, not a result")
 

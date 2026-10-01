@@ -6,7 +6,7 @@ from data import COLORS, READINGS, corpus, highlight, matrices, shap_long
 
 def render():
     st.title("TreeSHAP · what the ensembles lean on")
-    st.caption("Path-dependent TreeSHAP on models fit to all 793 clauses: a description of the fitted models, "
+    st.caption(f"Path-dependent TreeSHAP on models fit to all {corpus()['is_portuguese'].sum()} Portuguese clauses: a description of the fitted models, "
                "not an out-of-fold estimate. Compare rankings within a model, never magnitudes across models.")
     c = st.columns(2)
     slug = c[0].segmented_control("Model", ["xgboost", "forest"], default="xgboost",
