@@ -31,7 +31,7 @@ from sklearn.model_selection import StratifiedGroupKFold
 
 from .evaluate import macro_f1
 from .features import DERIVED_ONLY_BLOCKS, recompute_derived
-from .schema import SEED
+from .schema import ASPECT_PRIMITIVES, SEED
 
 
 def _folds(X, y, groups, n_splits, seed):
@@ -173,6 +173,59 @@ def block_permutation_importance(
         _row(name, y, groups, base, permuted[name], per_fold[name], labels, n_boot)
         for name in live
     ])
+
+
+def _set_class(X, prefix, cls):
+    Xc = X.copy()
+    for name, value in zip(("dynamic", "durative", "telic"), ASPECT_PRIMITIVES[cls]):
+        Xc[f"{prefix}_{name}"] = int(value)
+    return recompute_derived(Xc)
+
+
+def adjusted_class_probabilities(
+    model, X, y, groups, *, prefix="mc", classes=("Culm", "Pro", "CP", "St"),
+    n_boot: int = 500, alpha: float = 0.05, seed: int = SEED,
+) -> pd.DataFrame:
+    """Predicted reading distribution per aspectual class, other cues as observed.
+
+    Every row is assigned the class in turn and the fitted model's probabilities
+    are averaged over the corpus (g-computation), so tense, position and the
+    other clause keep their real distribution and only aspect changes. Unlike a
+    crosstab this is not confounded by which tenses each class happens to occur
+    with. Intervals refit the model on sentence-group bootstrap resamples.
+    """
+    y = np.asarray(y)
+    groups = np.asarray(groups)
+
+    def estimate(Xf, yf):
+        fitted = clone(model).fit(Xf, yf)
+        return {c: fitted.predict_proba(_set_class(X, prefix, c)).mean(axis=0)
+                for c in classes}, list(fitted.classes_)
+
+    point, labels = estimate(X, y)
+    uniq = np.unique(groups)
+    rows_by_group = {g: np.flatnonzero(groups == g) for g in uniq}
+    rng = np.random.default_rng(seed)
+    draws = {c: [] for c in classes}
+    for _ in range(n_boot):
+        idx = np.concatenate([rows_by_group[g] for g in rng.choice(uniq, len(uniq))])
+        est, lab = estimate(X.iloc[idx], y[idx])
+        if lab != labels:  # a resample missing a reading cannot be compared
+            continue
+        for c in classes:
+            draws[c].append(est[c])
+
+    out = []
+    for c in classes:
+        d = np.array(draws[c])
+        for j, reading in enumerate(labels):
+            out.append({
+                "clause": prefix, "aspect_class": c, "reading": reading,
+                "prob": float(point[c][j]),
+                "ci_lo": float(np.quantile(d[:, j], alpha / 2)),
+                "ci_hi": float(np.quantile(d[:, j], 1 - alpha / 2)),
+            })
+    return pd.DataFrame(out)
 
 
 def logit_coefficients(fitted_pipeline, feature_names, classes) -> pd.DataFrame:

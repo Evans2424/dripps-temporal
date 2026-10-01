@@ -77,6 +77,17 @@ def main() -> None:
     coefs.to_csv(ROOT / "results/tables/logit_coefficients.csv")
 
     print("\n" + "=" * 78)
+    print("ASPECT, ADJUSTED -- predicted readings per class, other cues as observed")
+    print("=" * 78)
+    adj = pd.concat([
+        interpret.adjusted_class_probabilities(models.b3_logit(), X, y, g, prefix="mc"),
+        interpret.adjusted_class_probabilities(models.b3_logit(), X, y, g, prefix="sc"),
+    ], ignore_index=True)
+    print(adj.pivot_table(index=["clause", "aspect_class"], columns="reading",
+                          values="prob").to_string(float_format=lambda x: f"{x:.3f}"))
+    adj.to_csv(ROOT / "results/tables/aspect_adjusted.csv", index=False)
+
+    print("\n" + "=" * 78)
     print("READABLE RULES -- depth-3 tree")
     print("=" * 78)
     tree = models.b4_tree(max_depth=3).fit(X, y)
@@ -84,7 +95,7 @@ def main() -> None:
     print(rules)
     (ROOT / "results/tables/tree_rules.txt").write_text(rules, encoding="utf-8")
 
-    print("wrote 5 tables to results/tables/")
+    print("wrote 6 tables to results/tables/")
 
 
 if __name__ == "__main__":
