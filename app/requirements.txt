@@ -1,0 +1,11 @@
+# Dependencies of the Streamlit app only (Community Cloud reads this file in
+# preference to the repo-root requirements.txt, which also carries what the
+# pipeline needs: shap and numba for `make explain`, statsmodels for the audit).
+# Keep the pins identical to the root file so the app shows the numbers the
+# pipeline produced.
+numpy==2.5.3
+pandas==3.0.6
+scikit-learn==1.9.1
+scipy==1.18.1
+xgboost==3.4.1
+streamlit==1.64.0

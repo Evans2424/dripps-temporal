@@ -1,6 +1,6 @@
 PY := .venv/bin/python
 
-.PHONY: all test audit baselines hierarchy varieties explain viewer clean
+.PHONY: all test audit baselines hierarchy varieties explain viewer app clean
 
 all: test audit baselines hierarchy varieties explain viewer
 
@@ -25,6 +25,10 @@ explain:
 # reads what the four steps above write, so it runs last
 viewer:
 	$(PY) experiments/06_viewer.py
+
+# interactive explorer over the same tables; not part of `all` (it is a server)
+app:
+	.venv/bin/streamlit run app/streamlit_app.py
 
 clean:
 	rm -rf results/tables/* results/figures/* results/viewer.html .pytest_cache

@@ -305,3 +305,113 @@ def test_viewer_script_declares_no_window_globals():
 
     clashes = declared & WINDOW_GLOBALS
     assert not clashes, f"top-level declaration shadows a window global: {clashes}"
+
+
+# --- FINDINGS.md quoted CI values that predated the bootstrap fix ------------
+
+FINDINGS_BLOCKS = {
+    "main-clause aspect": "aspect_mc",
+    "main-clause tense": "tense_mc",
+    "clause position": "position",
+    "connector": "connector",
+    "telicity/durativity interactions": "interaction",
+    "subordinate-clause aspect": "aspect_sc",
+}
+
+
+def test_findings_rq1_table_matches_the_generated_table():
+    """The prose file quotes cue_importance.csv by hand; it went stale once.
+
+    `results/tables/cue_importance.csv` was regenerated when the intervals moved
+    to a group bootstrap and `docs/FINDINGS.md` was not, so the paper's own
+    findings file carried pre-fix confidence intervals -- including one that no
+    longer excluded zero. Nothing compared the two, so nothing failed.
+    """
+    table = ROOT / "results/tables/cue_importance.csv"
+    if not table.exists():
+        pytest.skip("cue_importance.csv not built yet -- run `make hierarchy`")
+    want = pd.read_csv(table, index_col=0)
+
+    rows = {}
+    for line in (ROOT / "docs/FINDINGS.md").read_text(encoding="utf-8").splitlines():
+        cells = [c.strip().strip("*") for c in line.strip().strip("|").split("|")]
+        if len(cells) == 5 and cells[1] in FINDINGS_BLOCKS:
+            rows[FINDINGS_BLOCKS[cells[1]]] = cells[2:]
+    assert set(rows) == set(want.index), f"RQ1 table lost a block: {set(want.index) - set(rows)}"
+
+    number = lambda s: float(s.replace("−", "-"))  # noqa: E731
+    for block, (abl, interval, perm) in rows.items():
+        row = want.loc[block]
+        lo, hi = (number(v) for v in interval.strip("[]").split(","))
+        assert number(abl) == pytest.approx(row.importance_ablation, abs=5e-4), block
+        assert lo == pytest.approx(row.ci_lo_ablation, abs=5e-4), f"{block} ci_lo"
+        assert hi == pytest.approx(row.ci_hi_ablation, abs=5e-4), f"{block} ci_hi"
+        if perm.startswith("*") or "n/a" in perm:
+            assert np.isnan(row.importance_permutation), f"{block} has a permutation value"
+        else:
+            assert number(perm) == pytest.approx(row.importance_permutation, abs=5e-4), block
+
+
+# --- adjusted aspect probabilities: a crosstab would be confounded by tense ---
+
+def test_adjusted_class_probabilities_are_distributions_and_move_only_aspect(df):
+    pt = io.analysis_frame(df)
+    X, y, g = features.build(pt), features.target(pt), features.groups(pt)
+    out = interpret.adjusted_class_probabilities(models.b3_logit(), X, y, g, n_boot=5)
+    sums = out.groupby("aspect_class")["prob"].sum()
+    assert np.allclose(sums, 1.0)
+    assert (out["ci_lo"] <= out["ci_hi"]).all()
+    # the counterfactual rows must keep the derived columns consistent
+    Xc = interpret._set_class(X, "mc", "Culm")
+    assert (Xc["both_telic"] == Xc["mc_telic"] * Xc["sc_telic"]).all()
+    assert (Xc["tense_present"] == X["tense_present"]).all()
+
+
+# --- the Streamlit explorer: every page must render against the real tables ---
+
+@pytest.mark.parametrize("page", [
+    "overview", "corpus_explorer", "exploration", "models_page", "logit", "tree",
+    "hierarchy", "aspect", "shap_page", "varieties", "errors", "methods",
+])
+def test_app_page_renders_without_exception(page):
+    testing = pytest.importorskip("streamlit.testing.v1")
+    if not (ROOT / "results/tables/shap_xgboost.csv").exists():
+        pytest.skip("results tables not built; run `make all`")
+    app = str(ROOT / "app")
+    at = testing.AppTest.from_string(
+        f"import sys; sys.path.insert(0, {app!r})\nfrom views import {page}\n{page}.render()",
+        default_timeout=600,
+    )
+    at.run()
+    assert not at.exception, [e.value for e in at.exception]
+
+
+def _pins(path):
+    out = {}
+    for line in path.read_text().splitlines():
+        line = line.split("#")[0].strip()
+        if "==" in line:
+            name, version = line.split("==")
+            out[name.strip().lower()] = version.strip()
+    return out
+
+
+def test_deployed_app_pins_match_the_pipeline_and_its_data_is_tracked():
+    """The cloud app installs app/requirements.txt, not the root file.
+
+    A pin that drifts between the two would show numbers the pipeline did not
+    produce, and a gitignored table would be missing from the deployed checkout.
+    """
+    import subprocess
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    app, full = _pins(root / "app/requirements.txt"), _pins(root / "requirements.txt")
+    assert app, "app/requirements.txt lists no pinned packages"
+    assert {k: v for k, v in app.items() if full.get(k) != v} == {}, "app pins differ from the root file"
+    for banned in ("shap", "numba", "statsmodels"):
+        assert banned not in app, f"{banned} is not imported by the app; keep the cloud install light"
+
+    needed = ["results/tables/shap_forest.csv", "results/tables/shap_xgboost.csv", "data/raw/dripps_full.csv"]
+    ignored = subprocess.run(["git", "check-ignore", *needed], cwd=root, capture_output=True, text=True)
+    assert ignored.stdout.strip() == "", f"the deployed app reads gitignored files: {ignored.stdout}"
