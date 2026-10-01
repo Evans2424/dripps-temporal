@@ -47,7 +47,7 @@ def main() -> None:
     print(table.to_string())
 
     print("\nRank within each variety (1 = strongest cue):")
-    ranks = table.rank(ascending=False).astype(int)
+    ranks = table.rank(ascending=False, method="min").astype(int)  # ties share the best rank
     print(ranks.to_string())
     ranks.to_csv(ROOT / "results/tables/variety_cue_ranks.csv")
 
