@@ -33,7 +33,7 @@ make all
 | `src/dripps/explain.py` | TreeSHAP for the two ensemble rungs |
 | `experiments/` | `00_ingest` (second batch, xlsx → csv) `01_audit` `02_baselines` `03_cue_hierarchy` `04_variety_hierarchies` `05_explain` `06_viewer` |
 | `docs/` | [plan](docs/PROJECT_PLAN.md) · [scheme](docs/ANNOTATION_SCHEME.md) · [audit](docs/DATA_AUDIT.md) · [findings](docs/FINDINGS.md) · [linguistics](docs/LINGUISTICS.md) · [methods](docs/methods.md) · [deploy](docs/DEPLOY.md) · [refs](docs/references.bib) |
-| `results/viewer.html` | generated standalone dashboard — `make viewer`; the app's *Standalone viewer* page builds and embeds the same file |
+| `results/viewer.html` | generated dashboard — `make viewer`, then open it in a browser |
 | `app/` | interactive explorer (Streamlit): corpus filter with mispredicted-only view, model pages, error analysis. `make app`, then open http://localhost:8501; to share it, see [deploy](docs/DEPLOY.md) |
 
 ## Three things that will bite you

@@ -3,13 +3,13 @@
     make app          # or: .venv/bin/streamlit run app/streamlit_app.py
 
 Reads the corpus and results/tables/ (run `make all` first) and refits the cheap
-models on demand. The Standalone viewer page embeds experiments/06_viewer.py's output.
+models on demand. The static, shareable snapshot is still experiments/06_viewer.py.
 """
 
 import streamlit as st
 
 from views import (aspect, corpus_explorer, errors, exploration, hierarchy, logit, methods,
-                   models_page, overview, shap_page, tree, varieties, viewer)
+                   models_page, overview, shap_page, tree, varieties)
 
 st.set_page_config(page_title="DRIPPS cue hierarchy", page_icon=":material/schedule:", layout="wide")
 
@@ -35,7 +35,6 @@ pages = {
     ],
     "Reference": [
         st.Page(methods.render, title="Methods and references", icon=":material/menu_book:", url_path="methods"),
-        st.Page(viewer.render, title="Standalone viewer", icon=":material/dashboard:", url_path="viewer"),
     ],
 }
 
