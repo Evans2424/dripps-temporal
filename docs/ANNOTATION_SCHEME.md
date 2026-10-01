@@ -27,7 +27,7 @@ inference *must* run through tense, aspect and position.
 | Field | Meaning | Role here |
 |---|---|---|
 | `ID` | `<variety><n>`; prefix encodes the variety | grouping |
-| `DR` | Discourse relation, ISO 24617-2:8 DR-core | **excluded — leaky** |
+| `DR` | Discourse relation, ISO 24617-8 DR-core | **excluded — leaky** |
 | `SR-SC` | Semantic role of the subordinate clause | **excluded — leaky** |
 | `CNT` | Connector, lexical item or empty | cue |
 | `Position` | Position of SC relative to MC | cue |
@@ -63,7 +63,7 @@ A model given these columns reaches macro-F1 0.750 while explaining nothing.
 That number is reported once, as an explicit circular upper bound, and the
 columns are otherwise blocked by `dripps.leakage.assert_no_leakage`.
 
-For reference, the ISO 24617-2:8 relations and their argument roles:
+For reference, the ISO 24617-8 relations and their argument roles:
 
 | Relation | Arg1 role | Arg2 role | |
 |---|---|---|---|
