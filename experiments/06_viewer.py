@@ -5,7 +5,8 @@ one HTML file with no external data fetches -- it has to render from the file
 alone once published.
 
 Run after 02-05; it reads what they write and names the missing target if a
-table is absent.
+table is absent. For interactive exploration use the app instead (``make app``):
+this file is the static, shareable snapshot.
 """
 
 from __future__ import annotations
@@ -13,6 +14,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import unicodedata
 from datetime import date
 from pathlib import Path
 
@@ -21,40 +23,14 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from dripps import features, interpret, io, models, schema  # noqa: E402
+from dripps import features, interpret, io, models, results, schema  # noqa: E402
 
-TABLES = ROOT / "results/tables"
 TEMPLATE = ROOT / "experiments/assets/viewer_template.html"
 OUT = ROOT / "results/viewer.html"
 
-PRODUCED_BY = {
-    "baselines.csv": "make baselines",
-    "cue_importance.csv": "make hierarchy",
-    "logit_coefficients.csv": "make hierarchy",
-    "marginal_association.csv": "make hierarchy",
-    "oner_rule.json": "make hierarchy",
-    "tree_rules.txt": "make hierarchy",
-    "variety_cue_importance.csv": "make varieties",
-    "variety_cue_ranks.csv": "make varieties",
-    "variety_performance.csv": "make varieties",
-    "shap_summary.csv": "make explain",
-    "shap_blocks.csv": "make explain",
-    "shap_forest.csv": "make explain",
-    "shap_xgboost.csv": "make explain",
-}
-
-
-def _need(name: str) -> Path:
-    path = TABLES / name
-    if not path.exists():
-        raise SystemExit(
-            f"missing {path.relative_to(ROOT)} -- run `{PRODUCED_BY[name]}` first"
-        )
-    return path
-
 
 def _records(name: str) -> list[dict]:
-    return pd.read_csv(_need(name)).to_dict(orient="records")
+    return results.csv(name).to_dict(orient="records")
 
 
 # --- markdown, only the subset docs/methods.md uses -------------------------
@@ -115,6 +91,35 @@ def _markdown(md: str) -> str:
     return "\n".join(out)
 
 
+#: LaTeX accent command -> the combining mark it stands for.
+_ACCENTS = {
+    "'": "\u0301", "`": "\u0300", "^": "\u0302", '"': "\u0308",
+    "~": "\u0303", "c": "\u0327", "=": "\u0304", ".": "\u0307",
+}
+#: Letter macros with no base character to accent: ``L{\o}land`` -> ``Løland``.
+_LETTERS = {"o": "ø", "O": "Ø", "aa": "å", "AA": "Å", "ae": "æ", "AE": "Æ",
+            "ss": "ß", "i": "ı", "l": "ł", "L": "Ł", "oe": "œ", "OE": "Œ"}
+
+
+def _delatex(text: str) -> str:
+    """``Purifica\\c{c}\\~{a}o`` -> ``Purificacao`` with its real diacritics.
+
+    ``references.bib`` stays pure ASCII so it is portable into the LaTeX
+    submission, which means the names arrive here escaped. Stripping the braces
+    and backslashes alone would render ``Purificacc~ao``, so the accent commands
+    are decoded first and only then is the leftover markup dropped.
+    """
+    def accent(m):
+        return unicodedata.normalize("NFC", m.group(2) + _ACCENTS[m.group(1)])
+
+    for pattern in (r"\\([\'`^\"~c=.])\{(\w)\}", r"\\([\'`^\"~c=.])(\w)"):
+        text = re.sub(pattern, accent, text)
+    text = re.sub(r"\{?\\(" + "|".join(_LETTERS) + r")\}?(?![A-Za-z])",
+                  lambda m: _LETTERS[m.group(1)], text)
+    text = text.replace("---", "\u2014").replace("--", "\u2013")
+    return re.sub(r"[{}\\]|\$", "", text)
+
+
 def _references(bib: str) -> list[dict]:
     """Enough BibTeX parsing for our own file: key, and the fields we display."""
     entries = []
@@ -124,7 +129,7 @@ def _references(bib: str) -> list[dict]:
             m.group(1).lower(): " ".join(m.group(2).split())
             for m in re.finditer(r"(\w+)\s*=\s*\{(.*?)\}(?=,\s*\n|\s*\n?$)", body, re.S)
         }
-        clean = lambda s: re.sub(r"[{}\\]|\$", "", s or "")  # noqa: E731
+        clean = lambda s: _delatex(s or "")  # noqa: E731
         entries.append({
             "key": key,
             "author": clean(fields.get("author", "")).replace(" and ", "; "),
@@ -143,7 +148,7 @@ def _references(bib: str) -> list[dict]:
 
 def _shap_cube(slug: str, ids: list[str]) -> dict:
     """SHAP long form back into nested arrays: [class][row][feature]."""
-    long = pd.read_csv(_need(f"shap_{slug}.csv"))
+    long = results.csv(f"shap_{slug}.csv")
     classes = sorted(long["class"].unique())
     feats = list(dict.fromkeys(long["feature"]))
     wide = (
@@ -168,8 +173,9 @@ def build_payload() -> dict:
         tree, X.columns, tree.classes_, X=X, ids=ids
     )
 
-    variety_imp = pd.read_csv(_need("variety_cue_importance.csv"), index_col=0)
-    variety_ranks = pd.read_csv(_need("variety_cue_ranks.csv"), index_col=0)
+    variety_imp = results.csv("variety_cue_importance.csv", index_col=0)
+    variety_ranks = results.csv("variety_cue_ranks.csv", index_col=0)
+    coefs = results.csv("logit_coefficients.csv", index_col=0)
 
     return {
         "meta": {
@@ -187,12 +193,11 @@ def build_payload() -> dict:
         "cue_importance": _records("cue_importance.csv"),
         "baselines": _records("baselines.csv"),
         "marginal": _records("marginal_association.csv"),
-        "oner": json.loads(_need("oner_rule.json").read_text(encoding="utf-8")),
+        "oner": results.json_table("oner_rule.json"),
         "coefficients": {
-            "features": list(pd.read_csv(_need("logit_coefficients.csv"), index_col=0).index),
-            "classes": list(pd.read_csv(_need("logit_coefficients.csv"), index_col=0).columns),
-            "values": pd.read_csv(_need("logit_coefficients.csv"), index_col=0)
-                        .round(4).to_numpy().tolist(),
+            "features": list(coefs.index),
+            "classes": list(coefs.columns),
+            "values": coefs.round(4).to_numpy().tolist(),
         },
         "variety": {
             "blocks": list(variety_imp.index),
@@ -202,7 +207,7 @@ def build_payload() -> dict:
             "performance": _records("variety_performance.csv"),
         },
         "tree": structure,
-        "tree_rules": _need("tree_rules.txt").read_text(encoding="utf-8"),
+        "tree_rules": results.text("tree_rules.txt"),
         "shap": {
             "summary": _records("shap_summary.csv"),
             "blocks": _records("shap_blocks.csv"),
@@ -249,7 +254,10 @@ def render(payload: dict, template: str) -> str:
 
 
 def main() -> None:
-    payload = build_payload()
+    try:
+        payload = build_payload()
+    except results.MissingTable as e:
+        raise SystemExit(str(e)) from None
     html = render(payload, TEMPLATE.read_text(encoding="utf-8"))
     OUT.write_text(html, encoding="utf-8")
     size = len(html.encode()) / 1024

@@ -477,7 +477,7 @@ S.shap = () => {
   const segModel = el("div", {class: "seg", role: "tablist"});
   modelNames.forEach(m => segModel.appendChild(el("button", {text: m,
     role: "tab", "aria-selected": String(m === model),
-    onclick: () => { model = m; draw(); }})));
+    onclick: () => { model = m; draw(); drawWaterfall(); }})));
   const segView = el("div", {class: "seg", role: "tablist"});
   [["block", "by block"], ["feature", "by cue"]].forEach(([v, lab]) =>
     segView.appendChild(el("button", {text: lab, role: "tab",
@@ -522,7 +522,7 @@ S.shap = () => {
 
   // per-sentence attribution
   const picker = el("select", {});
-  D.shap.ids.slice(0, 400).forEach(id => picker.appendChild(
+  D.shap.ids.forEach(id => picker.appendChild(
     el("option", {value: id, text: `${id} — ${D.sentences[id]?.tr ?? ""}`})));
   const wf = el("div", {});
   const drawWaterfall = () => {
