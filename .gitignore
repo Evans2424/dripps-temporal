@@ -7,3 +7,8 @@ results/models/*
 data/interim/*
 data/processed/*
 .DS_Store
+
+# generated build output: the standalone dashboard. Rebuild with `make viewer`.
+# The per-row SHAP matrices (results/tables/shap_*.csv, ~1.8 MB each) ARE tracked:
+# the deployed app reads them and cannot run `make explain` itself.
+results/viewer.html

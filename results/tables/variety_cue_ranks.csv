@@ -1,0 +1,7 @@
+block,EP,BP,AP,MP,BE
+position,4,2,3,1,1
+connector,5,3,4,3,2
+aspect_mc,1,1,2,2,3
+aspect_sc,6,6,5,4,4
+tense_mc,2,4,1,6,4
+interaction,3,5,6,5,4

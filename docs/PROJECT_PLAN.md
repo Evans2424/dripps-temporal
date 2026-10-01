@@ -153,7 +153,7 @@ dripps-temporal/
 │   ├── DATA_AUDIT.md        # the audit above, regenerated per variety
 │   ├── EXPERIMENTS.md       # model ladder, protocol, pre-registered decisions
 │   └── RELATED_WORK.md      # Silvano 2021, Lobo 2003, Leal 2011, Móia & Viotti 2004,
-│                            # ISO 24617-2:8, Moens & Steedman 1988, attention-critique refs
+│                            # ISO 24617-8, Moens & Steedman 1988, attention-critique refs
 ├── results/{tables,figures,models}/
 └── paper/                        # ARR LaTeX template
 ```

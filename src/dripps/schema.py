@@ -31,7 +31,7 @@ LEAKY_COLUMNS = ("DR", "SR-SC")
 
 RAW_COLUMNS = (ID, "DR", "SR-SC", "CNT", "Position", TARGET, "TMC", "ATMC", "ATSC", SENTENCE)
 
-#: ISO 24617-2:8 DR-core relations attested in the corpus. Validated even though
+#: ISO 24617-8 DR-core relations attested in the corpus. Validated even though
 #: they are excluded from modelling: a re-export with a new or typo'd label must
 #: fail loudly rather than quietly change the circular upper bound.
 DR_LABELS = (

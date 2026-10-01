@@ -125,6 +125,19 @@ class _XGBWrapper(ClassifierMixin, BaseEstimator):
     def predict_proba(self, X):
         return self._model.predict_proba(X)
 
+    @property
+    def booster_(self):
+        """The fitted XGBClassifier, for tools that need the booster itself.
+
+        Deliberately not named ``estimator_``: sklearn's own ensembles use that
+        for the *unfitted* template estimator, so a tool unwrapping by that name
+        would silently get a bare DecisionTreeClassifier from a RandomForest.
+
+        Its classes are the integer codes in ``classes_`` order, so anything
+        reading per-class output maps position *i* back through ``classes_[i]``.
+        """
+        return self._model
+
 
 def b5_xgboost(**kw):
     return _XGBWrapper(**kw)

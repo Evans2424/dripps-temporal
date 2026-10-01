@@ -1,5 +1,7 @@
 """RQ2 (first pass): per-variety cue hierarchies.
 
+Writes results/tables/variety_{cue_importance,cue_ranks,performance}.csv.
+
 Descriptive only. Fitting five independent models overfits at n~200 and the
 resulting rankings are not strictly comparable; the confirmatory analysis is the
 pooled hierarchical model with varying intercepts *and* slopes, which separates
@@ -45,13 +47,18 @@ def main() -> None:
     print(table.to_string())
 
     print("\nRank within each variety (1 = strongest cue):")
-    print(table.rank(ascending=False).astype(int).to_string())
+    ranks = table.rank(ascending=False, method="min").astype(int)  # ties share the best rank
+    print(ranks.to_string())
+    ranks.to_csv(ROOT / "results/tables/variety_cue_ranks.csv")
 
     print("\nModel performance per variety:")
-    print(pd.DataFrame(floors).T.round(3).to_string())
+    perf = pd.DataFrame(floors).T.round(3)
+    print(perf.to_string())
+    perf.index.name = "variety"
+    perf.to_csv(ROOT / "results/tables/variety_performance.csv")
 
     table.to_csv(ROOT / "results/tables/variety_cue_importance.csv")
-    print(f"\nwrote results/tables/variety_cue_importance.csv")
+    print("\nwrote 3 tables to results/tables/")
 
 
 if __name__ == "__main__":

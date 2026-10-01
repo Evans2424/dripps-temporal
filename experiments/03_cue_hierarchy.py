@@ -1,11 +1,12 @@
 """RQ1: the cue hierarchy for the four Portuguese varieties.
 
-Writes results/tables/{cue_importance,logit_coefficients}.csv and
-results/tables/tree_rules.txt.
+Writes results/tables/{cue_importance,logit_coefficients,marginal_association}.csv,
+results/tables/oner_rule.json and results/tables/tree_rules.txt.
 """
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -31,6 +32,8 @@ def main() -> None:
     ).sort_values("v", ascending=False)
     print(marg[["cue", "v", "chi2", "dof", "p"]].to_string(index=False,
           float_format=lambda x: f"{x:.3f}"))
+    marg[["cue", "v", "chi2", "dof", "p", "n"]].to_csv(
+        ROOT / "results/tables/marginal_association.csv", index=False)
 
     print("\n" + "=" * 78)
     print("SINGLE BEST CUE (B1 one-rule)")
@@ -39,6 +42,12 @@ def main() -> None:
     print(f"  chosen feature : {X.columns[oner.feature_]}")
     print(f"  rules          : {oner.rules_}")
     print(f"  train accuracy : {oner.train_accuracy_:.3f}")
+    # numpy scalars are not JSON-serialisable; the rule keys are feature values
+    (ROOT / "results/tables/oner_rule.json").write_text(json.dumps({
+        "feature": str(X.columns[oner.feature_]),
+        "rules": {str(k): str(v) for k, v in oner.rules_.items()},
+        "train_accuracy": float(oner.train_accuracy_),
+    }, indent=2), encoding="utf-8")
 
     print("\n" + "=" * 78)
     print("CUE HIERARCHY -- refit ablation (primary): out-of-fold macro-F1 drop")
@@ -68,6 +77,17 @@ def main() -> None:
     coefs.to_csv(ROOT / "results/tables/logit_coefficients.csv")
 
     print("\n" + "=" * 78)
+    print("ASPECT, ADJUSTED -- predicted readings per class, other cues as observed")
+    print("=" * 78)
+    adj = pd.concat([
+        interpret.adjusted_class_probabilities(models.b3_logit(), X, y, g, prefix="mc"),
+        interpret.adjusted_class_probabilities(models.b3_logit(), X, y, g, prefix="sc"),
+    ], ignore_index=True)
+    print(adj.pivot_table(index=["clause", "aspect_class"], columns="reading",
+                          values="prob").to_string(float_format=lambda x: f"{x:.3f}"))
+    adj.to_csv(ROOT / "results/tables/aspect_adjusted.csv", index=False)
+
+    print("\n" + "=" * 78)
     print("READABLE RULES -- depth-3 tree")
     print("=" * 78)
     tree = models.b4_tree(max_depth=3).fit(X, y)
@@ -75,7 +95,7 @@ def main() -> None:
     print(rules)
     (ROOT / "results/tables/tree_rules.txt").write_text(rules, encoding="utf-8")
 
-    print(f"wrote 3 tables to results/tables/")
+    print("wrote 6 tables to results/tables/")
 
 
 if __name__ == "__main__":
