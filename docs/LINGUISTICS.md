@@ -5,7 +5,7 @@ this says *what the thing being measured is*, in linguistic terms, with corpus
 examples, and what each model can and cannot see about it.
 
 Every number and every example here is from the current corpus and the current
-tables in `results/tables/`, recomputed for this document, and include the 150-clause second batch
+tables in `results/tables/`, recomputed for this document, and include the two later batches (150 + 95 clauses)
 (`docs/ANNOTATION_SCHEME.md`) unless a sentence says "original". Citation keys are
 entries in `docs/references.bib`.
 
@@ -37,7 +37,7 @@ plus a past participle. English uses **`having`** the same way.
 
 Two properties make this construction the right probe for a cue-hierarchy study.
 
-**It is almost never marked.** 1,088 of 1,143 clauses (95.2%) carry no discourse
+**It is almost never marked.** 1,183 of 1,238 clauses (95.6%) carry no discourse
 connector at all. There is no *after*, no *depois de*, no *enquanto* to read the
 temporal relation off. Whatever tells a reader that the participial event
 precedes, follows or overlaps the main clause event has to be inferred from
@@ -53,8 +53,8 @@ is the phenomenon the paper is about — see §2.
 **Practical notes that shape the modelling.**
 
 - **The APC span is not annotated.** It is recovered heuristically from the
-  `tendo` / `having` token: present in all 943 Portuguese analysis rows and 199
-  of 200 BE rows. The span is unambiguous for 895 of the 943 Portuguese rows
+  `tendo` / `having` token: present in all 1,038 Portuguese analysis rows and 199
+  of 200 BE rows. The span is unambiguous for 990 of the 1,038 Portuguese rows
   (one row, one `tendo`). The other 48 need a rule: 29 rows share a single `tendo`
   with another row of the same sentence, and 19 rows (15 distinct sentences)
   contain more than one `tendo`, so which participial clause a row refers to
@@ -104,7 +104,7 @@ One real example of each, from European Portuguese, with its annotated cues:
 
 | | Ant | Post | Simul | n |
 |---|---|---|---|---|
-| **EP** European | 69 | **96** | 85 | 250 |
+| **EP** European | 97 | **138** | 110 | 345 |
 | **BP** Brazilian | **93** | 38 | 62 | 193 |
 | **AP** Angolan | 44 | **133** | 73 | 250 |
 | **MP** Mozambican | 28 | **124** | 98 | 250 |
@@ -125,10 +125,10 @@ Three facts to state in this order:
    as speculation.
 
 **How a perfect participle gets a posterior reading.** The corpus answer is
-structural: 92.8% of Portuguese APCs are clause-final, and the posterior cases
+structural: 92.3% of Portuguese APCs are clause-final, and the posterior cases
 are overwhelmingly a *perfective, telic main clause followed by a final
 participial clause* — `Culm` main clause with `PP` tense goes posterior in
-268/367 cases (73%). The participle marks its own event as complete, not as
+293/408 cases (72%). The participle marks its own event as complete, not as
 prior to the main clause; in a final position after a completed main event, the
 natural reading is narrative continuation. Note this is the reading the
 distribution supports, and the argument the paper has to make explicitly — the
@@ -140,8 +140,8 @@ Two annotated columns are excluded by assertion, not by judgement. `SR-SC`
 (semantic role of the subordinate clause) takes the values `before` and `after`
 under the `asynchrony` relation — that *is* temporal order, and in the corpus
 `before` → `Ant` and `after` → `Post` without exception. `DR` == `asynchrony`
-never co-occurs with `Simul`; `conjunction`, `elaboration`, `exemplification`
-and `manner` are always `Simul`.
+never co-occurs with `Simul`; `elaboration` (57/57), `exemplification` (16/16)
+and `synchrony` (7/7) are always `Simul`, and `conjunction` (21/23) and `manner` (5/6) nearly so.
 
 Both are part of the ISO 24617-8 DR-core inventory [iso24617-8], and both are
 downstream of the temporal relation by definition. `src/dripps/leakage.py`
@@ -205,31 +205,31 @@ spending a parameter on it.
 
 **The hypothesis under test** [silvano2021apc]: anteriority and posteriority
 readings track **telic** situations, simultaneity tracks **durative** ones, *in
-both clauses*. The corpus, pooled over the 943 Portuguese rows:
+both clauses*. The corpus, pooled over the 1,038 Portuguese rows:
 
 | main clause | Ant | Post | Simul | reading |
 |---|---|---|---|---|
-| durative (`St`,`Pro`,`CP`) | 159 | 106 | **273** | simultaneity-leaning |
-| non-durative (`Culm`,`Pon`) | 75 | **285** | 45 | posteriority-leaning |
-| telic (`Culm`,`CP`) | 92 | **325** | 107 | posteriority-leaning |
-| atelic (`St`,`Pro`,`Pon`) | 142 | 66 | **211** | simultaneity-leaning |
+| durative (`St`,`Pro`,`CP`) | 176 | 120 | **288** | simultaneity-leaning |
+| non-durative (`Culm`,`Pon`) | 86 | **313** | 55 | posteriority-leaning |
+| telic (`Culm`,`CP`) | 105 | **362** | 119 | posteriority-leaning |
+| atelic (`St`,`Pro`,`Pon`) | 157 | 71 | **224** | simultaneity-leaning |
 
 Both halves of the hypothesis hold, in the predicted direction, for the **main**
-clause. Per class the pattern is sharp: `Pro` → `Simul` 98/138 (71%), `Culm` →
-`Post` 283/403 (70%), `St` → `Ant` or `Simul` 244/279 with only 35 `Post`.
+clause. Per class the pattern is sharp: `Pro` → `Simul` 102/144 (71%), `Culm` →
+`Post` 311/452 (69%), `St` → `Ant` or `Simul` 266/306 with only 40 `Post`.
 
 For the **subordinate** clause the raw pattern is weaker, and it does not
-survive controlling for the main clause. `sc_telic` splits 176/330/212 against
-58/61/106 raw, but §6 shows that difference is carried by the main clause. This
+survive controlling for the main clause. `sc_telic` splits 202/365/230 against
+60/68/113 raw, but §6 shows that difference is carried by the main clause. This
 is the paper's main divergence from the prior literature, and §6 is about how firmly
 it can be stated.
 
 ### 3.2 Tense → a TAM bundle
 
-`TMC` annotates the main clause tense with **32 distinct labels**, and the
+`TMC` annotates the main clause tense with **33 distinct labels**, and the
 Portuguese and English inventories are nearly disjoint (`PP`, `PIMP-Ind`,
-`PPC-Ind`, `PresPro`… against `Pst`, `PresP`, `PstCont`…). A 32-level
-categorical is not estimable at n≈200–250 per variety, and it cannot transfer
+`PPC-Ind`, `PresPro`… against `Pst`, `PresP`, `PstCont`…). A 33-level
+categorical is not estimable at n≈200–350 per variety, and it cannot transfer
 between languages at all, which would make RQ3 impossible.
 
 So each label maps to six orthogonal, language-neutral dimensions —
@@ -246,6 +246,7 @@ level), plus `perfective`, `progressive`, `perfect`, `finite`, `irrealis`:
 | `Pres-Conj` | presente do conjuntivo | present · irrealis |
 | `Cond` | condicional | future · irrealis |
 | `PstPro` | *estava a fazer* (second batch; coded at ingest) | past · progressive |
+| `PartP` | particípio passado, main clause (third batch; coded at ingest) | nonfinite |
 | `PresPro` / `PresPro-G` | *está a fazer* (EP) / *está fazendo* (BP) | present · progressive |
 | `ir(Pres)+INF-S` | *vai fazer* | future |
 | `INF-C` | infinitivo composto | nonfinite · perfect |
@@ -261,22 +262,22 @@ extending up to the utterance time, which is why it is coded `present ·
 perfect` rather than as a past. If the durativity → simultaneity hypothesis is
 right, that bundle should force a simultaneity reading.
 
-It does, without exception. All **14** `PPC-Ind` rows in the corpus are
-`Simul` — 6 EP, 3 BP, 3 AP, 2 MP:
+It does, without exception. All **15** `PPC-Ind` rows in the corpus are
+`Simul` — 7 EP, 3 BP, 3 AP, 2 MP:
 
 > PTEU200 · `PPC-Ind` · MC `Pro` · SC `CP` · **Simul**
 > Globalmente, o índice de preço das casas **tem vindo a aumentar** tendo sido
 > vendidos cerca de 86 335 mil imóveis.
 
 A clean theory-predicted micro-result: the prediction follows from the
-grammatical description of the form, was not fitted to the data, and holds 14/14
+grammatical description of the form, was not fitted to the data, and holds 15/15
 across all four varieties. Present it as a qualitative confirmation, and say the
 n out loud.
 
 ### 3.3 Position
 
 `Position` is `Initial` / `Medial` / `Final`, modelled as **final vs non-final**
-because 92.8% of Portuguese APCs are final (875/943) and the contrast of
+because 92.3% of Portuguese APCs are final (958/1,038) and the contrast of
 interest is whether the minority reads differently.
 
 > `Initial` — PTBR93 · `Pres-Ind` · MC `CP` · SC `CP` · **Ant**
@@ -293,16 +294,19 @@ second half only as a tendency:
 
 | Portuguese APCs | Ant | Post | Simul |
 |---|---|---|---|
-| final (n=875) | 174 | 391 | 310 |
-| **non-final (n=68)** | **60** | **0** | **8** |
+| final (n=958) | 195 | 431 | 332 |
+| **non-final (n=80)** | **67** | **2** | **11** |
 
-**Not one non-final Portuguese APC is annotated `Post`.** Zero out of 68. As a
-constraint on the grammar this is the strongest single fact in the corpus —
-fronting the participial clause appears to block the posterior reading outright.
+**Almost no non-final Portuguese APC is annotated `Post`.** Two out of 80, both
+medial clauses from the newest batch (PTEUJ17, PTEUJ90); across the earlier 943
+rows it was zero out of 68. As a constraint on the grammar this is still the
+strongest single fact in the corpus — fronting the participial clause appears to
+block the posterior reading — but it is now "nearly always", not "never", and the
+two exceptions are worth re-reading against the annotation.
 
 And yet position ranks only **third** in the hierarchy (§5). That is not a
 contradiction, and it is the question you will be asked, so have the answer
-ready: **position is nearly deterministic but rare.** It applies to 7.2% of
+ready: **position is nearly deterministic but rare.** It applies to 7.7% of
 Portuguese rows, so removing it costs the model little held-out macro-F1, while
 main-clause aspect is only *graded* but applies to every row. Importance as
 measured here is contribution to predictive performance, which weights a cue by
@@ -312,11 +316,11 @@ ranking speak for the constraint.
 
 ### 3.4 Connector
 
-Present in only **55 of 1,143 clauses (4.8%)**, and unevenly distributed:
+Present in only **55 of 1,238 clauses (4.4%)**, and unevenly distributed:
 
 | | EP | BP | AP | MP | BE |
 |---|---|---|---|---|---|
-| connector present | 4 (1.6%) | **34 (17.6%)** | 6 (2.4%) | 1 (0.4%) | 10 (5.0%) |
+| connector present | 4 (1.2%) | **34 (17.6%)** | 6 (2.4%) | 1 (0.4%) | 10 (5.0%) |
 | items | *mesmo* ×4 | *mesmo* ×33, *porém* ×1 | *mesmo* ×6 | *mesmo* ×1 | *despite* ×5, *after* ×4, *although* ×1 |
 
 Modelled as presence/absence, never as a lexical item — there is no n for
@@ -329,9 +333,9 @@ lexical modelling. In practice the Portuguese connector cue *is* **`mesmo`**
 
 Across the four Portuguese varieties, `mesmo` goes **37 `Ant`, 7 `Simul`, 0
 `Post`** — the same asymmetry position shows. And that is not a coincidence:
-23 of its 44 occurrences are non-final, against a 7.2% base rate. **`mesmo` and
+23 of its 44 occurrences are non-final, against a 7.7% base rate. **`mesmo` and
 fronting travel together**, so the connector's apparently large coefficient
-(+0.52 → `Ant`, −0.76 → `Post`) is partly position wearing a connector's hat.
+(+0.51 → `Ant`, −0.73 → `Post`) is partly position wearing a connector's hat.
 This is why the connector block's ablation interval straddles zero (§6) even
 though its coefficient looks decisive: drop it and position absorbs the work.
 
@@ -365,13 +369,13 @@ The marginal association of each cue with `TR`, as bias-corrected Cramér's V
 
 | cue | V | χ² | dof | n |
 |---|---|---|---|---|
-| `ATMC` main-clause aspect | **0.439** | 370.0 | 8 | 943 |
-| `TMC` main-clause tense | 0.403 | 351.8 | 46 | 943 |
-| `Position` | 0.288 | 160.0 | 4 | 943 |
-| `CNT` connector | 0.216 | 92.1 | 4 | 943 |
-| `ATSC` subordinate-clause aspect | 0.173 | 62.2 | 6 | 943 |
+| `ATMC` main-clause aspect | **0.424** | 380.1 | 8 | 1038 |
+| `TMC` main-clause tense | 0.414 | 402.8 | 48 | 1038 |
+| `Position` | 0.274 | 160.0 | 4 | 1038 |
+| `CNT` connector | 0.203 | 89.5 | 4 | 1038 |
+| `ATSC` subordinate-clause aspect | 0.162 | 60.6 | 6 | 1038 |
 
-The bias correction matters: `TMC` has 72 cells against `Position`'s 9, and
+The bias correction matters: `TMC` has 75 cells against `Position`'s 9, and
 uncorrected V rewards high cardinality, which would put tense at the top for
 the wrong reason.
 
@@ -382,13 +386,13 @@ durative, atelic — and vary only the tense:
 
 | stative main clause | Ant | Post | Simul |
 |---|---|---|---|
-| with `Pres-Ind` (present) | **93** | 3 | 31 |
-| with `PP` (past perfective) | 17 | 21 | **54** |
-| with `PIMP-Ind` (past imperfective) | 6 | 9 | **16** |
+| with `Pres-Ind` (present) | **105** | 3 | 31 |
+| with `PP` (past perfective) | 18 | 25 | **58** |
+| with `PIMP-Ind` (past imperfective) | 6 | 10 | **18** |
 
 Same aspectual class. Opposite reading. A stative main clause in the present
-goes anterior 73% of the time; the same stative class in the simple past goes
-simultaneous 59% of the time. Whatever `ATMC`'s marginal V of 0.439 is
+goes anterior 76% of the time; the same stative class in the simple past goes
+simultaneous 57% of the time. Whatever `ATMC`'s marginal V of 0.424 is
 measuring, part of it is tense.
 
 > PTEU81 · MC `St` · `Pres-Ind` → **Ant**
@@ -408,22 +412,22 @@ quantification, not discovery.
 ## 5. What each model actually does with the cues
 
 The ladder is ordered so each rung answers "does the next one earn its place?".
-Out-of-fold macro-F1 over the 943 Portuguese rows, grouped by sentence, with
+Out-of-fold macro-F1 over the 1,038 Portuguese rows, grouped by sentence, with
 intervals from resampling sentence groups:
 
 | | model | macro-F1 | 95% CI | what it can express |
 |---|---|---|---|---|
-| **B0** | majority class | 0.195 | [0.184, 0.207] | the base rate, nothing else |
-| **B1** | one-rule | 0.451 | [0.430, 0.471] | one cue, one lookup table |
-| **B3** | multinomial logit | **0.705** | [0.673, 0.736] | every cue, additively, signed |
-| **B4** | decision tree (d=4) | 0.629 | [0.594, 0.663] | conjunctions of cues, hard splits |
-| **B5** | random forest | 0.700 | [0.668, 0.730] | arbitrary conjunctions, averaged |
-| **B5** | XGBoost | 0.701 | [0.670, 0.732] | arbitrary conjunctions, boosted |
-| — | *circular (`DR`+`SR-SC`)* | *0.750* | *[0.718, 0.782]* | *the answer, restated* |
-| — | *circular control: B3 on the same 793 rows* | *0.736* | *[0.700, 0.766]* | *the fair comparison for the row above* |
+| **B0** | majority class | 0.196 | [0.186, 0.206] | the base rate, nothing else |
+| **B1** | one-rule | 0.442 | [0.424, 0.463] | one cue, one lookup table |
+| **B3** | multinomial logit | **0.695** | [0.665, 0.725] | every cue, additively, signed |
+| **B4** | decision tree (d=4) | 0.649 | [0.616, 0.682] | conjunctions of cues, hard splits |
+| **B5** | random forest | 0.692 | [0.662, 0.722] | arbitrary conjunctions, averaged |
+| **B5** | XGBoost | 0.695 | [0.665, 0.724] | arbitrary conjunctions, boosted |
+| — | *circular (`DR`+`SR-SC`)* | *0.750* | *[0.718, 0.783]* | *the answer, restated* |
+| — | *circular control: B3 on the same 793 rows* | *0.736* | *[0.701, 0.769]* | *the fair comparison for the row above* |
 
-**B0 majority** predicts `Post` for everything, because `Post` is 391/943. Its
-macro-F1 is 0.195, not the 41% accuracy you might expect, because macro-F1
+**B0 majority** predicts `Post` for everything, because `Post` is 433/1,038. Its
+macro-F1 is 0.196, not the 41% accuracy you might expect, because macro-F1
 averages per-class F1 over a fixed label set and a single-class predictor scores
 zero on the two classes it never emits. That is the point of using macro-F1
 here: it refuses to reward a model for exploiting a base rate, which matters
@@ -432,7 +436,7 @@ enormously for BE at 95% anterior.
 **B1 one-rule** [holte1993] searches all 17 features, builds a value → majority
 class lookup for each, and keeps the best on training accuracy. It selects
 **`mc_durative`**, with the rule *durative → `Simul`, non-durative → `Post`*
-(59.2% training accuracy, macro-F1 0.451). This is the single most informative
+(57.9% training accuracy, macro-F1 0.442). This is the single most informative
 cue in the inventory, and the rule it learns *is* Silvano et al.'s durativity
 hypothesis in its crudest possible form. That the crudest form already more
 than doubles the floor is a real result. What it cannot express is any
@@ -441,7 +445,7 @@ overrides the durativity reading entirely.
 
 Its role on the ladder is as the honest floor for a *hierarchy* claim: a
 hierarchy is only worth reporting if the full cue inventory beats the best
-single cue, which it does (0.705 vs 0.451, non-overlapping intervals).
+single cue, which it does (0.695 vs 0.442, non-overlapping intervals).
 
 **B3 multinomial logit** is the primary inferential model. It fits one signed
 weight per cue per reading on standardised features, and predictions are a
@@ -450,14 +454,14 @@ about direction and magnitude, which is what the `Coefficients` panel shows:
 
 | feature | → Ant | → Post | → Simul | reading |
 |---|---|---|---|---|
-| `pos_nonfinal` | **+0.77** | **−0.87** | +0.10 | fronting pushes to anterior, blocks posterior |
-| `mc_durative` | −0.11 | −0.42 | **+0.52** | durative main clause → simultaneity |
-| `mc_telic` | +0.39 | +0.05 | **−0.44** | telic main clause → away from simultaneity |
-| `tense_present` | **+0.61** | −0.52 | −0.09 | present main clause → anterior |
-| `mc_perfect` | **−0.42** | +0.20 | +0.21 | perfect main clause → away from anterior |
-| `has_connector` | +0.52 | −0.76 | +0.24 | (BP's concessive *mesmo*, n=45) |
-| `sc_durative` | +0.33 | −0.27 | −0.06 | weak, and not necessary (§6) |
-| `both_telic` | −0.06 | 0.00 | +0.05 | the "both clauses" claim, near zero |
+| `pos_nonfinal` | **+0.58** | **−0.55** | −0.03 | fronting pushes to anterior, blocks posterior |
+| `mc_durative` | −0.12 | −0.31 | **+0.44** | durative main clause → simultaneity |
+| `mc_telic` | +0.34 | +0.05 | **−0.39** | telic main clause → away from simultaneity |
+| `tense_present` | **+0.68** | −0.57 | −0.11 | present main clause → anterior |
+| `mc_perfect` | **−0.40** | +0.21 | +0.19 | perfect main clause → away from anterior |
+| `has_connector` | +0.51 | −0.73 | +0.22 | (BP's concessive *mesmo*, n=45) |
+| `sc_durative` | +0.31 | −0.18 | −0.13 | weak, and not necessary (§6) |
+| `both_telic` | −0.10 | +0.11 | −0.01 | the "both clauses" claim, small |
 
 Every sign predicted by the prior literature comes out as predicted. What the
 logit *cannot* do is express a cue whose effect depends on another cue, except
@@ -471,40 +475,39 @@ of the hierarchy** — durativity, then position, then tense — without being t
 the ranking:
 
 ```
-mc_durative = 0  (non-durative main clause)               n=405
-├── final position                                        n=381
-│   ├── mc_perfective = 0                                 n= 28  →  Post  ( 14/28 )
-│   └── mc_perfective = 1                                 n=353  →  Post  (271/353)
-└── non-final                                             n= 24  →  Ant   ( 22/24 )
-mc_durative = 1  (durative main clause)                   n=538
-├── tense ≠ present                                       n=371
-│   ├── final position                                    n=348  →  Simul (211/348)
-│   └── non-final                                         n= 23  →  Ant   ( 19/23 )
-└── tense = present                                       n=167
-    ├── mc_dynamic = 0                                    n=147  →  Ant   (101/147)
+mc_durative = 0  (non-durative main clause)               n=454
+├── final position                                        n=424
+│   ├── mc_perfective = 0                                 n= 31  →  Ant   ( 14/31 )
+│   └── mc_perfective = 1                                 n=393  →  Post  (298/393)
+└── non-final                                             n= 30  →  Ant   ( 26/30 )
+mc_durative = 1  (durative main clause)                   n=584
+├── tense ≠ present                                       n=403
+│   ├── final position                                    n=376  →  Simul (222/376)
+│   └── non-final                                         n= 27  →  Ant   ( 20/27 )
+└── tense = present                                       n=181
+    ├── mc_dynamic = 0                                    n=161  →  Ant   (113/161)
     └── mc_dynamic = 1                                    n= 20  →  Simul ( 16/20 )
 ```
 
 Read as a grammar: *non-durative main clause → posterior*; *durative main clause
 → simultaneous*; *unless the participial clause is fronted, or the main clause is
 present tense and not dynamic, in which case anterior*. The fronting branches are
-the categorical constraint from §3.3 — 22/24 and 19/23 anterior, with zero
-posterior — showing up as its own leaf.
+the near-categorical constraint from §3.3 — 26/30 and 20/27 anterior — showing up as its own leaf.
 
 **Look at what the tree does with the participial clause: nothing.** No
-subordinate-clause feature appears anywhere in it, and the one split whose two
-children predict the same class (`mc_perfective`) is a main-clause split. That
+subordinate-clause feature appears anywhere in it, and the one weak leaf
+(`mc_perfective` = 0, 14/31 anterior) is a main-clause split. That
 is the §6 ablation result appearing in a completely different model class, and
 it is among the most legible pieces of evidence for the paper's headline claim.
 
-Note the tree scores *worse* than the logit (0.629 at depth 4). It spends its
+Note the tree scores *worse* than the logit (0.649 at depth 4). It spends its
 capacity making hard partitions where the evidence is graded. It is on the
 ladder to be read, not to win, and the viewer's tree is fit at depth 3 —
 shallower than the scored rung — for exactly that reason.
 
 **B5 forest** [breiman2001] and **B5 XGBoost** [chen2016] can represent
-arbitrary cue interactions. Neither beats the additive logit: 0.700 and 0.701
-against 0.705, with intervals that almost coincide.
+arbitrary cue interactions. Neither beats the additive logit: 0.692 and 0.695
+against 0.695, with intervals that almost coincide.
 
 **This tie is a substantive linguistic finding, not a null result.** Two models
 with the capacity to exploit cue interactions, given a deliberately interaction-
@@ -515,14 +518,14 @@ strongest available evidence that "in both clauses" is not doing work.
 
 **The `circular` row** is allowed `DR` and `SR-SC` and reaches 0.750. Read it
 two ways. As a diagnostic it confirms the leakage is definitional. As a result
-it says the honest cues (0.736 on the same rows) recover essentially everything the
+it says the honest cues (0.736 on the same 793 rows) recover essentially everything the
 discourse-relation annotation encodes about temporal order — the two intervals
 overlap heavily. The temporo-aspectual inventory is nearly sufficient for what
 a discourse annotator concluded.
 
-### Two rungs that do not exist yet
+### B6 (built) and B7 (not yet)
 
-**B6 — pooled hierarchical multinomial** is the confirmatory instrument for
+**B6 — pooled hierarchical multinomial** (built; `experiments/07_hierarchical.py`) is the confirmatory instrument for
 RQ2, and the distinction it draws is linguistic, not statistical. Fitting
 `TR ~ cues * variety` with partial pooling separates:
 
@@ -533,9 +536,16 @@ RQ2, and the distinction it draws is linguistic, not statistical. Fitting
   asks.
 
 Five separate per-variety models — which is what §8's `Per variety` panel shows
-— cannot separate these, and at n=193–250 they visibly overfit. Base-rate
+— cannot separate these, and at n=193–345 they visibly overfit. Base-rate
 differences masquerading as cue-weight differences is the specific error the
 hierarchical model exists to prevent.
+
+Result: the intercept test rejects (bootstrap p = 0.003), so base rates differ.
+The omnibus slope test is marginal (p = 0.033), no block survives correction
+(smallest Holm p = 0.30), and the slope model does not beat the intercept-only model out
+of fold (0.700 vs 0.704 macro-F1). The data fit a shared cue hierarchy with different
+base rates; any residual difference in weights is small and cannot be pinned to a cue
+at this sample size. See FINDINGS, RQ2.
 
 **B7 — leave-one-variety-out transfer** answers RQ3. It is only meaningful
 because the TAM bundle made the varieties commensurable; with raw `TMC` labels
@@ -565,24 +575,24 @@ The pooled Portuguese result (`Cue hierarchy` panel):
 
 | rank | cue block | ablation | 95% CI | permutation |
 |---|---|---|---|---|
-| 1 | **main-clause aspect** | 0.074 | [0.048, 0.099] | 0.158 |
-| 2 | **main-clause tense** | 0.045 | [0.018, 0.068] | 0.133 |
-| 3 | clause position | 0.037 | [0.022, 0.054] | 0.067 |
-| 4 | connector | 0.005 | [−0.005, 0.014] | 0.028 |
-| 5 | telicity/durativity interactions | −0.004 | [−0.012, 0.003] | *n/a — derived* |
-| 6 | **subordinate-clause aspect** | −0.008 | [−0.022, 0.008] | 0.015 |
+| 1 | **main-clause aspect** | 0.093 | [0.066, 0.122] | 0.155 |
+| 2 | **main-clause tense** | 0.057 | [0.034, 0.081] | 0.124 |
+| 3 | clause position | 0.031 | [0.013, 0.050] | 0.064 |
+| 4 | connector | 0.008 | [−0.001, 0.018] | 0.020 |
+| 5 | telicity/durativity interactions | −0.004 | [−0.014, 0.006] | *n/a — derived* |
+| 6 | **subordinate-clause aspect** | −0.007 | [−0.022, 0.008] | 0.016 |
 
 Ablation and permutation agree on rank order for every block they share. That
 is the robustness check, and it is a real one: one measure holds the model fixed
 and corrupts its input, the other refits without the cue entirely.
 
 **Three intervals cross zero, and you should say so unprompted.** The connector
-block [−0.005, 0.014], the interaction block [−0.012, 0.003] and the
+block [−0.001, 0.018], the interaction block [−0.014, 0.006] and the
 subordinate-clause aspect block [−0.022, 0.008] are all consistent with
 contributing nothing. For the connector that is an n problem (45 clauses, 34 of
 them in BP). For subordinate-clause aspect it is the finding.
 
-**Why `aspect_sc` = −0.008 is a strong claim rather than a weak measurement.**
+**Why `aspect_sc` = −0.007 is a strong claim rather than a weak measurement.**
 Dropping the `aspect_sc` block also drops `both_telic` and `both_durative`,
 because they are products with an `sc_` factor and would otherwise dangle as
 orphans (`interpret._orphaned_derived`). So the ablated model loses *every*
@@ -591,9 +601,9 @@ interaction terms — and scores no worse. The subordinate clause's own aspectua
 class is not merely weak; it is dispensable.
 
 **Where SHAP disagrees, and what to say.** In the `SHAP` panel, XGBoost's
-mean |SHAP| for `sc_durative` on the `Post` class is **0.283** — its third-largest
-per-feature value for that class, after `tense_present` (0.409) and `mc_durative`
-(0.357). Ablation says the whole `aspect_sc` block is worth −0.008. Both are correct, and the resolution is collinearity:
+mean |SHAP| for `sc_durative` on the `Post` class is **0.251** — its third-largest
+per-feature value for that class, after `tense_present` (0.422) and `mc_durative`
+(0.277). Ablation says the whole `aspect_sc` block is worth −0.007. Both are correct, and the resolution is collinearity:
 
 - `sc_durative` correlates 0.73 with `both_durative` and 0.20 with
   `mc_durative`. The fitted XGBoost genuinely routes predictions through it.
@@ -669,7 +679,7 @@ feature space to transfer through. Both outcomes are publishable:
 Given that B3 already sits statistically level with XGBoost, and that the
 honest cues already recover what the discourse annotation encodes (§5), the
 first outcome is the one to expect — but the adverbial channel is a real
-advantage the encoder has and 943 clauses is a small fine-tuning set, so it
+advantage the encoder has and 1,038 clauses is a small fine-tuning set, so it
 is genuinely open.
 
 **T3 — causal ablation. The primary interpretability experiment**, because each
@@ -677,7 +687,7 @@ perturbation is a direct test of a claim made elsewhere in the paper:
 
 | perturbation | tests | corpus prediction |
 |---|---|---|
-| swap main-clause tense morphology `PP` → `Pres-Ind` | the `tense_present` → `Ant` coefficient (+0.61) | predicted distribution shifts toward `Ant`; the stative crosstab in §4 says 93/127 vs 54/92 |
+| swap main-clause tense morphology `PP` → `Pres-Ind` | the `tense_present` → `Ant` coefficient (+0.68) | predicted distribution shifts toward `Ant`; the stative crosstab in §4 says 105/139 vs 58/101 |
 | mask the participle vs. mask the main-clause finite verb | **the paper's headline claim** — that the main clause carries the reading | damage should be markedly asymmetric, worse for the main verb |
 | mask explicit temporal adverbials | how much of any encoder edge comes from outside the inventory | removes the channel the feature model never had |
 | move the APC from final to initial | the categorical constraint of §3.3 | `Post` probability should collapse toward zero |
@@ -688,7 +698,7 @@ on the annotation at all, so it is a genuinely independent test of the same
 hypothesis. Agreement would be the strongest result in the paper.
 
 All of these need the **APC span**, which is not annotated (§1). Span recovery
-from `tendo` / `having` is unambiguous for 895 of 943 Portuguese rows (§1). Report that accuracy as a
+from `tendo` / `having` is unambiguous for 990 of 1,038 Portuguese rows (§1). Report that accuracy as a
 limitation of T3, not as a footnote.
 
 **T2 — attention, secondary and descriptive only.** Report attention mass from
@@ -738,7 +748,7 @@ The fitted depth-3 tree as a diagram; clicking a leaf lists the sentences that
 land in it.
 **Say:** it recovers the top three cues independently, and reads as three
 grammatical rules (§5).
-**Trap:** this is depth 3; the ladder's tree is depth 4 and scores 0.629. Two
+**Trap:** this is depth 3; the ladder's tree is depth 4 and scores 0.649. Two
 different fits, deliberately. And the tree is *not* the paper's model — it is
 the readable illustration of the logit's story.
 
@@ -756,19 +766,20 @@ Per-variety ablation importances and a rank matrix.
 |---|---|---|---|---|---|
 | main-clause aspect | **1** | **1** | 2 | 2 | *3* |
 | main-clause tense | 2 | 4 | **1** | 4 | *4* |
-| position | 3 | 2 | 3 | **1** | *1* |
-| connector | 4 | 3 | 5 | 5 | *2* |
-| interaction | 5 | 5 | 6 | 3 | *4* |
-| subordinate-clause aspect | 6 | 6 | 4 | 6 | *4* |
+| position | 4 | 2 | 3 | **1** | *1* |
+| connector | 6 | 3 | 5 | 5 | *2* |
+| interaction | 5 | 5 | 4 | 3 | *4* |
+| subordinate-clause aspect | 3 | 6 | 6 | 6 | *4* |
 
 **Say:** three differences stand out in the ablation pass (per-variety permutation
 is not computed, so they are not cross-checked) — MP barely uses tense (importance
 0.003, rank 4) and leans on position (rank 1, importance 0.118); BP is the only
 variety where the connector does work (0.026), and the only one where connectors
-are common; subordinate-clause aspect ranks 4th to 6th everywhere (4th only in AP)
-and is non-positive in three of four varieties (AP is +0.008), so the pooled result
-is not an artefact of pooling.
-**Trap, and it is a big one:** these are five independent fits at n=193–250 and
+are common; subordinate-clause aspect ranks 3rd in EP and 6th elsewhere
+and is non-positive in three of four varieties (EP is +0.030), so the pooled result
+is not an artefact of pooling, though EP's value moved from −0.016 to +0.030 when 95 new
+EP rows were added.
+**Trap, and it is a big one:** these are five independent fits at n=193–345 and
 they are visibly unstable — half the blocks show *negative* importance in at least
 one variety, which is the signature of overfitting, not of a harmful cue. These
 numbers establish that a difference exists and is worth modelling. They do not
@@ -805,13 +816,13 @@ crosstab in §4 is the counterexample to have ready.
 
 1. **In Portuguese, the temporal reading of an APC is carried by the main
    clause, not the participial clause.** Main-clause aspect is the top cue
-   (ablation 0.074 [0.048, 0.099]); subordinate-clause aspect is dispensable
-   (−0.008 [−0.022, 0.008], with the interaction terms dropped alongside it).
+   (ablation 0.093 [0.066, 0.122]); subordinate-clause aspect is dispensable
+   (−0.007 [−0.022, 0.008], with the interaction terms dropped alongside it).
 2. **The direction of every effect matches the prior literature's prediction.**
-   Durative main clause → simultaneity (+0.52); telic main clause → away from
-   simultaneity (−0.44); non-final position → anterior (+0.77) and never
-   posterior (0/68).
-3. **`PPC-Ind` forces simultaneity, 14/14**, as the grammatical description of
+   Durative main clause → simultaneity (+0.44); telic main clause → away from
+   simultaneity (−0.39); non-final position → anterior (+0.58) and almost never
+   posterior (2/80).
+3. **`PPC-Ind` forces simultaneity, 15/15**, as the grammatical description of
    EP's *pretérito perfeito composto* predicts.
 4. **The cues combine additively.** Two ensembles with interaction capacity tie
    the additive logit.
@@ -823,9 +834,11 @@ crosstab in §4 is the counterexample to have ready.
 
 **Do not claim.**
 
-- *Any specific variety's hierarchy.* Five fits at n=193–250, unstable, negative
-  importances. Wait for B6.
-- *That base rates and cue weights differ.* Only B6 separates them.
+- *Any specific variety's hierarchy.* Five fits at n=193–345 are unstable, and
+  B6 finds only marginal, unlocalised evidence that the weights differ. Say "not distinguishable".
+- *That cue weights differ between varieties.* B6 gives a marginal omnibus
+  p = 0.033, no block survives correction, and the slopes add no predictive
+  accuracy; base rates do differ (bootstrap p = 0.003).
 - *That connectors do not matter in EP, AP or MP.* n = 4, 6, 1. Say "too rare
   to estimate here".
 - *Anything about English cue weights.* Unidentifiable at 95% one class.
@@ -838,7 +851,7 @@ crosstab in §4 is the counterexample to have ready.
   annotated variables was not computed, on the grounds that their classification
   is clear-cut. **So there is no inter-annotator agreement figure for `TR`, the
   dependent variable of this study.** A reviewer will ask; the strongest
-  mitigation is a second annotator re-coding a sample for `TR`. The 150-clause second batch has no agreement figure at all. AP's moderate
+  mitigation is a second annotator re-coding a sample for `TR`. The later batches (150 + 95 clauses) have no agreement figure at all. AP's moderate
   `DR` agreement is also a live confound for RQ2, because noisier annotation can
   masquerade as different cue weights.
 

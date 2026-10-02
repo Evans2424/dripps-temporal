@@ -62,9 +62,9 @@ def test_english_and_portuguese_tense_labels_are_disjoint_except_shared(df):
 # --- data integrity ----------------------------------------------------------
 
 def test_all_rows_parsed(df):
-    assert len(df) == 1143
+    assert len(df) == 1238
     assert df.variety.value_counts().to_dict() == {
-        "EP": 250, "AP": 250, "MP": 250, "BE": 200, "BP": 193
+        "EP": 345, "AP": 250, "MP": 250, "BE": 200, "BP": 193
     }
 
 
@@ -88,7 +88,7 @@ def test_apc_auxiliary_is_recoverable(df):
     """The APC span is not annotated; it is recovered from the auxiliary."""
     pt = df[df.is_portuguese]["sentence_norm"]
     en = df[~df.is_portuguese]["sentence_norm"]
-    assert pt.str.contains(r"\btendo\b", case=False).sum() == 943   # 100%
+    assert pt.str.contains(r"\btendo\b", case=False).sum() == 1038   # 100%
     assert en.str.contains(r"\bhaving\b", case=False).sum() == 199  # 199/200
 
 
@@ -136,10 +136,10 @@ def test_built_features_never_leak(df):
 
 def test_multi_apc_sentences_share_a_group(df):
     """Duplicated sentences must never be split across CV folds."""
-    per_group = df.groupby("sentence_group")["Sentence"].nunique()
+    per_group = df.groupby("sentence_group")["Sentence"].agg(lambda s: len({io.group_key(x) for x in s}))
     assert (per_group == 1).all()
     sizes = df.groupby("sentence_group").size()
-    assert (sizes > 1).sum() == 26, "expected 26 multi-APC sentence groups"
+    assert (sizes > 1).sum() == 27, "expected 26 multi-APC groups plus the PTAO36/PTAOV25 near-duplicate"
 
 
 # --- documented facts the paper depends on -----------------------------------
@@ -163,5 +163,14 @@ def test_english_is_near_categorically_anterior(df):
 def test_ep_perfeito_composto_forces_simultaneity(df):
     """EP's pretérito perfeito composto is iterative/durative, unlike EN present perfect."""
     ep = df[(df.variety == "EP") & (df["TMC"] == "PPC-Ind")]
-    assert len(ep) == 6
+    assert len(ep) == 7
     assert set(ep["TR"]) == {"Simul"}
+
+
+def test_later_batches_overlap_nothing_and_abergaria_is_tagged():
+    """No sentence is in two batches (the ingest drops them), and the J batch is EP-only, 95 rows."""
+    df = io.load()
+    assert (df.groupby("sentence_group").batch.nunique() == 1).all()
+    j = df[df.batch == "abergaria"]
+    assert len(j) == 95 and set(j.variety) == {"EP"} and j.ID.str.startswith("PTEUJ").all()
+    assert (j["SR-SC"] == "").all() and (j.CNT == "").all()

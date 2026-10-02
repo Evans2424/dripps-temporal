@@ -2,7 +2,7 @@
 
 ## Context
 
-> **Status.** The figures in this plan describe the original 993-row export. A 150-sentence second batch has since been added (1,143 rows; see `docs/ANNOTATION_SCHEME.md`), and current numbers live in `docs/FINDINGS.md` and `results/tables/`.
+> **Status.** The figures in this plan describe the original 993-row export. Two later batches (150 and 95 sentences) have since been added (1,238 rows; see `docs/ANNOTATION_SCHEME.md`), and current numbers live in `docs/FINDINGS.md` and `results/tables/`.
 
 A COLING 2027 **long paper (8 pages)** using the DRIPPS corpus (993 annotated adverbial perfect participial clauses, five varieties) to answer:
 
@@ -92,7 +92,7 @@ Decided on the evidence (you delegated this): **regularised multinomial logistic
 | **B3** | **Multinomial logit, M&S primitives + TAM bundles + 2 pre-registered interactions, L2** | **Primary: RQ1** |
 | B4 | Depth-limited decision tree | Readable rules |
 | B5 | Random Forest / XGBoost | Interaction discovery, nonlinearity check |
-| **B6** | **Hierarchical multinomial, varying intercepts *and* slopes by variety** | **Primary: RQ2** |
+| **B6** | **Hierarchical multinomial, varying intercepts *and* slopes by variety** (built: `07_hierarchical.py`) | **Primary: RQ2** |
 | B7 | Leave-one-variety-out transfer | RQ3 |
 
 **RQ1 cue hierarchy** = ranked standardised effect sizes from B3 with bootstrap CIs, cross-checked against permutation importance from B5. Agreement is a robustness result; disagreement is a finding about collinearity.

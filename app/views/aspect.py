@@ -57,12 +57,10 @@ def render():
             st.dataframe(tbl.pivot(index="class", columns="reading", values="estimate").reindex(ORDER),
                          )
 
-    try:  # widest gap between aspectual classes, per clause, in model-adjusted probability
-        adj_all = aspect_adjusted().query("aspect_class != 'Pon'")
-        sp = adj_all.groupby(["clause", "reading"])["prob"].agg(lambda s: s.max() - s.min()).groupby("clause").max()
-        sc = table("cue_importance.csv").set_index("block").loc["aspect_sc"]
-    except Exception:
-        sp = None
+    adj_all = aspect_adjusted().query("aspect_class != 'Pon'")
+    sp = adj_all.groupby(["clause", "reading"])["prob"].agg(lambda s: s.max() - s.min()).groupby("clause").max()
+    ci = table("cue_importance.csv")
+    sc = None if ci is None else ci.set_index("block").loc["aspect_sc"]
     st.markdown(
         "**How to read it.** *Raw counts* are the share of clauses the annotators labelled with each reading. "
         "*Model-adjusted* gives every clause the class in turn, keeps its real tense, position and other "
@@ -71,6 +69,7 @@ def render():
         "**What changes.** Raw, states look anterior; that is tense (many states are present tense). "
         "Adjusted, states lean simultaneous like processes, as the durativity claim predicts. "
         f"The participial clause's classes stay much closer together: at most {sp['sc'] * 100:.0f} points apart, "
-        f"against {sp['mc'] * 100:.0f} for the main clause, and removing that block costs {sc.importance_ablation:.3f} "
-        f"macro-F1 (95% interval [{sc.ci_lo_ablation:.3f}, {sc.ci_hi_ablation:.3f}])."
-    ) if sp is not None else None
+        f"against {sp['mc'] * 100:.0f} for the main clause"
+        + ("." if sc is None else f". Removing that block changes macro-F1 by {sc.importance_ablation:+.3f} "
+           f"(95% interval [{sc.ci_lo_ablation:+.3f}, {sc.ci_hi_ablation:+.3f}]).")
+    )

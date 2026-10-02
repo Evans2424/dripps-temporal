@@ -6,7 +6,7 @@
 
 | variety | sentences |
 |---|---|
-| **EP** | 250 |
+| **EP** | 345 |
 | **BP** | 193 |
 | **AP** | 250 |
 | **MP** | 250 |
@@ -16,7 +16,7 @@
 
 | variety | Ant | Post | Simul |
 |---|---|---|---|
-| **EP** | 69 (27.6%) | 96 (38.4%) | 85 (34.0%) |
+| **EP** | 97 (28.1%) | 138 (40.0%) | 110 (31.9%) |
 | **BP** | 93 (48.2%) | 38 (19.7%) | 62 (32.1%) |
 | **AP** | 44 (17.6%) | 133 (53.2%) | 73 (29.2%) |
 | **MP** | 28 (11.2%) | 124 (49.6%) | 98 (39.2%) |
@@ -28,7 +28,7 @@ EP/AP/MP are posteriority-dominant; **BP inverts to anteriority-dominant**; Brit
 
 | variety | non-final position % | connector present % | stative main clause % | distinct tense labels |
 |---|---|---|---|---|
-| **EP** | 7.2 | 1.6 | 30.8 | 13 |
+| **EP** | 8.7 | 1.2 | 30.1 | 16 |
 | **BP** | 17.1 | 17.6 | 48.2 | 16 |
 | **AP** | 3.6 | 2.4 | 22.4 | 13 |
 | **MP** | 3.2 | 0.4 | 21.2 | 13 |
@@ -42,7 +42,7 @@ Descriptive only: the cues are collinear, so these rank cues but overstate the i
 
 | variety | Position | CNT | TMC | ATMC | ATSC |
 |---|---|---|---|---|---|
-| **EP** | 0.211 | 0.049 | 0.41 | 0.424 | 0.139 |
+| **EP** | 0.198 | 0.046 | 0.436 | 0.381 | 0.11 |
 | **BP** | 0.263 | 0.266 | 0.376 | 0.403 | 0.08 |
 | **AP** | 0.244 | 0.197 | 0.448 | 0.441 | 0.189 |
 | **MP** | 0.352 | 0.155 | 0.201 | 0.395 | 0.192 |
@@ -52,7 +52,7 @@ Descriptive only: the cues are collinear, so these rank cues but overstate the i
 
 `SR-SC` and `DR` are partly *defined* by temporal order and are excluded from every model by `dripps.leakage.assert_no_leakage`.
 
-Computed on the 993 rows annotated for `SR-SC` (150 from the second batch have none).
+Computed on the 993 rows annotated for `SR-SC` (245 from the later batches have none).
 
 | column | v | chi2 | dof |
 |---|---|---|---|
@@ -65,10 +65,10 @@ Computed on the 993 rows annotated for `SR-SC` (150 from the second batch have n
 
 ## Data quality
 
-- **26 sentences are duplicated** across 55 rows (multi-APC sentences, one row per clause). All CV splits group on `sentence_group`; an ungrouped split leaks.
+- **27 sentences are duplicated** across 57 rows (multi-APC sentences, one row per clause). All CV splits group on `sentence_group`; an ungrouped split leaks.
 - **17 sentences contain a literal `;`** and the exporter does not quote fields, so a naive CSV read drops or truncates them. `dripps.io` splits positionally and rejoins.
 - **557 sentences contain non-breaking spaces** (1129 occurrences) and one contains U+2028. `sentence_norm` normalises these for tokenisation and span regexes.
-- **The APC span is not annotated.** Recovered from the auxiliary (`dripps.schema.APC_AUXILIARY`): 943/943 Portuguese, 199/200 English; 24 sentences contain more than one auxiliary, so the span is ambiguous.
+- **The APC span is not annotated.** Recovered from the auxiliary (`dripps.schema.APC_AUXILIARY`): 1038/1038 Portuguese, 199/200 English; 24 sentences contain more than one auxiliary, so the span is ambiguous.
 
 ## Feature sparsity (Portuguese analysis set)
 
@@ -76,20 +76,20 @@ Features below ~5% are retained but cannot support per-variety estimates; they r
 
 | feature | % present |
 |---|---|
-| **tense_nonfinite** | 1.7 |
+| **mc_irrealis** | 1.7 |
+| **mc_progressive** | 1.8 |
+| **tense_nonfinite** | 1.8 |
 | **tense_future** | 1.8 |
-| **mc_irrealis** | 1.9 |
-| **mc_progressive** | 2 |
-| **mc_perfect** | 3.7 |
-| **has_connector** | 4.8 |
-| **pos_nonfinal** | 7.2 |
-| **tense_present** | 19.3 |
-| **both_durative** | 30.5 |
-| **both_telic** | 44.2 |
-| **sc_durative** | 45 |
-| **mc_telic** | 55.6 |
-| **mc_durative** | 57.1 |
-| **mc_dynamic** | 70.4 |
-| **mc_perfective** | 72 |
-| **sc_telic** | 76.1 |
+| **mc_perfect** | 3.9 |
+| **has_connector** | 4.3 |
+| **pos_nonfinal** | 7.7 |
+| **tense_present** | 19.1 |
+| **both_durative** | 30.4 |
+| **sc_durative** | 44.9 |
+| **both_telic** | 45.5 |
+| **mc_durative** | 56.3 |
+| **mc_telic** | 56.5 |
+| **mc_dynamic** | 70.5 |
+| **mc_perfective** | 72.3 |
+| **sc_telic** | 76.8 |
 | **sc_dynamic** | 87.4 |

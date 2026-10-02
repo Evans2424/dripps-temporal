@@ -30,6 +30,13 @@ def render():
                "95% CI from resampling sentences.")
 
     v = imp.set_index("block")
+    b6 = table("b6_tests.csv")
+    rq2 = ""
+    if b6 is not None:
+        p_int, p_slope = b6.set_index("term").loc[["intercepts (base rates)", "slopes, all cues"], "p_boot"]
+        rq2 = (f"RQ2: base rates {'differ' if p_int < .05 else 'are not shown to differ'} across varieties "
+               f"(bootstrap p = {p_int:.3f}); cue weights {'differ' if p_slope < .05 else 'are not shown to differ'} "
+               f"(slopes p = {p_slope:.3f}). ")
     ens = f1.loc[["B5 forest", "B5 xgboost"], "macro_f1"]
     st.markdown(
         "- Main-clause aspect and tense carry the reading; clause position is third.\n"
@@ -37,5 +44,5 @@ def render():
         f"[{v.ci_lo_ablation['aspect_sc']:.3f}, {v.ci_hi_ablation['aspect_sc']:.3f}].\n"
         f"- Random forest ({ens.iloc[0]:.3f}) and XGBoost ({ens.iloc[1]:.3f}) do not exceed the additive logit "
         f"({b3.macro_f1:.3f}): no evidence of cue interactions.\n"
-        "- RQ2 (variety differences) is descriptive only; RQ3 (transfer) is not started."
+        f"- {rq2}RQ3 (transfer) is not started."
     )

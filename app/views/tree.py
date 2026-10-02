@@ -58,4 +58,4 @@ def render():
             df = df[df["TR"] != leaf["predicted"]]
         st.dataframe(df[["ID", "variety", "TR", "main aspect", "TMC", "Position", "Sentence"]],
                      hide_index=True, height=320)
-    st.caption("Splits on the participial clause change no prediction: both children predict the same reading.")
+    st.caption("No split uses the participial clause: every split is on the main clause or on position.")

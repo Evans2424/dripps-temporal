@@ -40,7 +40,7 @@ def render():
     base = table("baselines.csv")
     if base is not None:
         base = base.assign(role=base["model"].map(ROLE),
-                           kind=base["model"].map(lambda m: "leakage check" if "circular" in m else "model"))
+                           kind=base["model"].map(lambda m: "leakage check" if m.startswith("circular (") else "model"))
         chart = interval_dots(base, y="model", x="macro_f1", lo="ci_lo", hi="ci_hi", color="kind",
                               sort=list(base["model"]), x_title="macro-F1")
         st.altair_chart(chart.properties(height=280))

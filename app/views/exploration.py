@@ -114,7 +114,7 @@ def render():
     with t5:
         st.markdown("Two annotated columns partly **encode the answer**, so no model may use them.")
         c = st.columns(2)
-        ann = pt[pt["SR-SC"] != ""]  # the second batch has no SR-SC
+        ann = pt[pt["SR-SC"] != ""]  # the later batches have no SR-SC
         for box, col in zip(c, ["SR-SC", "DR"]):
             ct = pd.crosstab(ann[col], ann["TR"]).reindex(columns=READINGS, fill_value=0)
             box.markdown(f"**{col}** × reading")

@@ -1,10 +1,10 @@
 PY := .venv/bin/python
 
-.PHONY: all ingest test audit baselines hierarchy varieties explain viewer app clean
+.PHONY: all ingest test audit baselines hierarchy varieties hierarchical explain viewer app clean
 
-all: ingest test audit baselines hierarchy varieties explain viewer
+all: ingest test audit baselines hierarchy varieties hierarchical explain viewer
 
-# converts data/raw/archive/Dados_Violeta.xlsx -> data/raw/dripps_violeta.csv
+# converts the later-batch workbooks (Violeta, Abergaria) -> data/raw/dripps_{violeta,abergaria}.csv
 ingest:
 	$(PY) experiments/00_ingest.py
 
@@ -22,6 +22,10 @@ hierarchy:
 
 varieties:
 	$(PY) experiments/04_variety_hierarchies.py
+
+# B6: pooled model, varying intercepts + slopes (slow: permutation tests, ~10 min)
+hierarchical:
+	$(PY) experiments/07_hierarchical.py
 
 explain:
 	$(PY) experiments/05_explain.py
