@@ -160,7 +160,7 @@ dripps-temporal/
 └── paper/                        # ARR LaTeX template
 ```
 
-Deterministic seeds; `make all` reproduces every number in the paper.
+Fixed seeds; `make all` reproduces every number in the paper except the T1/T3 encoder tables (`make encoder`, GPU; CUDA kernels are not bit-reproducible, so those vary slightly between runs).
 
 ---
 
@@ -180,7 +180,7 @@ Feasible in 22 days because the data is hand-annotated and the modelling is ligh
 
 ## Verification
 
-- `make all` from a clean checkout reproduces every table and figure.
+- `make all` from a clean checkout reproduces every table and figure, except the GPU-only encoder tables (`make encoder`), which `make clean` keeps.
 - Unit tests: M&S mapping round-trips all five classes including `Pon`; TAM mapping covers every attested `TMC` value in all five varieties (fail on unseen); leakage guard raises when `DR`/`SR-SC` reaches a `TR` model; `GroupKFold` shares no sentence across folds.
 - Sanity checks that must hold: B3 macro-F1 > B0 and > B1 with non-overlapping bootstrap CIs; the deliberately circular `SR-SC` model scores near ceiling (confirming the leakage diagnosis rather than hiding it); EP `PPC-Ind` → Simul reproduces 6/6; BE majority baseline reproduces ≈95%.
 - Per-variety confusion matrices, not just aggregates.

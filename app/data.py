@@ -17,7 +17,6 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from sklearn.base import clone
-from sklearn.model_selection import StratifiedGroupKFold
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT / "src") not in sys.path:
@@ -110,10 +109,9 @@ def oof(label: str) -> pd.DataFrame:
     else:
         make = models.LADDER[label]
     Xv, yv, gv = X.to_numpy(), y.to_numpy(), g.to_numpy()
-    cv = StratifiedGroupKFold(n_splits=evaluate.N_SPLITS, shuffle=True, random_state=schema.SEED)
     pred = np.empty(len(yv), dtype=object)
     proba = np.full((len(yv), len(READINGS)), np.nan)
-    for train, test in cv.split(Xv, yv, gv):
+    for train, test in evaluate.folds(yv, gv, schema.SEED):
         est = clone(make()).fit(Xv[train], yv[train])
         pred[test] = est.predict(Xv[test])
         if hasattr(est, "predict_proba"):

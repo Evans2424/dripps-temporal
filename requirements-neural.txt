@@ -1,0 +1,6 @@
+# GPU step only (make encoder); keep out of requirements.txt and app/requirements.txt.
+-r requirements.txt
+torch
+transformers>=5
+spacy>=3.7
+# python -m spacy download pt_core_news_sm

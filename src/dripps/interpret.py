@@ -27,16 +27,15 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from sklearn.base import clone
-from sklearn.model_selection import StratifiedGroupKFold
 
+from . import evaluate
 from .evaluate import macro_f1, resample_group_rows
 from .features import DERIVED_ONLY_BLOCKS, recompute_derived
 from .schema import ASPECT_PRIMITIVES, SEED
 
 
 def _folds(X, y, groups, n_splits, seed):
-    cv = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=seed)
-    return list(cv.split(X, y, groups))
+    return list(evaluate.folds(y, groups, seed, n_splits))
 
 
 def _group_bootstrap_ci(y, groups, base, variants, *, n_boot, alpha=0.05, seed=SEED):
