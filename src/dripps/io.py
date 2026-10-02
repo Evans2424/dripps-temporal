@@ -17,9 +17,15 @@ from . import schema
 
 #: Anchored to the repo, not the process cwd, so imports work from anywhere.
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_RAW = ROOT / "data/raw/dripps_full.csv"
+#: The original export only; ``load()`` with no argument reads all three files.
+ORIGINAL_RAW = ROOT / "data/raw/dripps_full.csv"
 #: Second annotation batch, converted by experiments/00_ingest.py (IDs carry a "V").
 VIOLETA_RAW = ROOT / "data/raw/dripps_violeta.csv"
+#: Third batch (EP only), converted by the same script (IDs carry a "J").
+ABERGARIA_RAW = ROOT / "data/raw/dripps_abergaria.csv"
+
+
+_TAGGED_ID = rf"^PT[A-Z]{{2}}([{''.join(schema.BATCH_BY_TAG)}])\d+$"
 
 
 class SchemaError(ValueError):
@@ -79,15 +85,15 @@ def _variety(series: pd.Series) -> pd.DataFrame:
 
 
 def load(path: str | Path | None = None, *, strict: bool = True) -> pd.DataFrame:
-    """Load the export (both batches by default), validate every label, and
+    """Load the export (all three files by default), validate every label, and
     attach variety metadata.
 
-    Adds ``batch`` (``violeta`` for the second annotation batch, else
+    Adds ``batch`` (``violeta``/``abergaria`` for the later annotation batches, else
     ``original``), ``variety``, ``language``, ``is_portuguese``, and ``sentence_group``
     (a stable integer id shared by the duplicated rows of multi-APC sentences,
     used as the grouping key for every cross-validation split).
     """
-    paths = [path] if path else [DEFAULT_RAW, VIOLETA_RAW]
+    paths = [ORIGINAL_RAW, VIOLETA_RAW, ABERGARIA_RAW] if path is None else [path]
     df = pd.concat([_read_unquoted(p) for p in paths], ignore_index=True)
 
     missing = [c for c in schema.RAW_COLUMNS if c not in df.columns]
@@ -101,10 +107,13 @@ def load(path: str | Path | None = None, *, strict: bool = True) -> pd.DataFrame
         _validate(df)
 
     df = pd.concat([df, _variety(df[schema.ID])], axis=1)
-    df["batch"] = df[schema.ID].str.match(r"PT[A-Z]{2}V\d+$").map({True: "violeta", False: "original"})
-    # multi-APC sentences are duplicated across rows; group so CV never splits them
+    tag = df[schema.ID].str.extract(_TAGGED_ID)[0]
+    df["batch"] = tag.map(schema.BATCH_BY_TAG).fillna("original")
+    # multi-APC sentences are duplicated across rows; group so CV never splits them.
+    # The key ignores digits, punctuation and quotes, so a sentence re-annotated with a
+    # list number or different quote marks (PTAO36 / PTAOV25) stays in one fold.
     df["sentence_norm"] = df[schema.SENTENCE].map(normalize_text)
-    df["sentence_group"] = df.groupby("sentence_norm", sort=False).ngroup()
+    df["sentence_group"] = df.groupby(df["sentence_norm"].map(group_key), sort=False).ngroup()
     return df
 
 
@@ -113,6 +122,11 @@ def load(path: str | Path | None = None, *, strict: bool = True) -> pd.DataFrame
 #: survive naive processing but change tokenization, so downstream text work
 #: uses ``sentence_norm``.
 _ODD_WHITESPACE = re.compile(r"[\u00a0\u2028\u2029\u000b\u000c\u0085]")
+
+
+def group_key(text: str) -> str:
+    """Letters only, lower-cased: the identity of a sentence for fold assignment."""
+    return re.sub(r"[^a-zà-ÿ]+", "", text.lower())
 
 
 def normalize_text(text: str) -> str:
@@ -127,14 +141,22 @@ def _validate(df: pd.DataFrame) -> None:
         "ATMC": schema.ASPECT_LABELS,
         "ATSC": schema.ASPECT_LABELS,
         "TMC": schema.TMC_LABELS,
-        "DR": schema.DR_LABELS,
-        "SR-SC": (*schema.SR_LABELS, ""),  # "" = not annotated (second batch)
+        "DR": (*schema.DR_LABELS, ""),  # "" = not annotated (Abergaria batch)
+        "SR-SC": (*schema.SR_LABELS, ""),  # blank only in the later batches; checked below
     }
     problems = []
     for col, allowed in checks.items():
         unknown = sorted(set(df[col]) - set(allowed))
         if unknown:
             problems.append(f"  {col}: {unknown} (allowed: {list(allowed)[:6]}...)")
+    # blank DR / SR-SC are legitimate only in the later batches, where they were never annotated
+    later = df[schema.ID].str.match(_TAGGED_ID)
+    blank_sr = df.loc[(df["SR-SC"] == "") != later, schema.ID].tolist()
+    if blank_sr:
+        problems.append(f"  SR-SC must be blank exactly in the later batches; offending: {blank_sr[:10]}")
+    blank_dr = df.loc[(df["DR"] == "") & (df[schema.ID].str.extract(_TAGGED_ID)[0] != "J"), schema.ID].tolist()
+    if blank_dr:
+        problems.append(f"  DR blank outside the Abergaria batch: {blank_dr[:10]}")
     conn = sorted({c for c in df["CNT"] if c} - set(schema.CONNECTOR_LABELS))
     if conn:
         problems.append(f"  CNT: {conn}")

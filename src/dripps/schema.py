@@ -60,8 +60,13 @@ VARIETY_BY_PREFIX = {
     "PTEUV": ("EP", "pt", True),
     "PTAOV": ("AP", "pt", True),
     "PTMZV": ("MP", "pt", True),
+    # third batch (DADOS_João_Abergaria_PE.xlsx, EP newswire): "J" marks the batch
+    "PTEUJ": ("EP", "pt", True),
     "ENBE": ("BE", "en", False),
 }
+
+#: ID tag after the variety prefix -> batch name (original-export IDs carry no tag).
+BATCH_BY_TAG = {"V": "violeta", "J": "abergaria"}
 
 #: The four Portuguese varieties, in the order used in tables and figures.
 PT_VARIETIES = ("EP", "BP", "AP", "MP")
@@ -133,6 +138,7 @@ TAM_BUNDLE = {
     # -- Portuguese: non-finite ------------------------------------------------
     "INF-S":          _tam("nonfinite", finite=False),                  # infinitivo simples
     "INF-C":          _tam("nonfinite", finite=False, perfect=True),    # infinitivo composto
+    "PartP":          _tam("nonfinite", finite=False),                  # particípio passado (Abergaria batch)
     "GS":             _tam("nonfinite", finite=False, progressive=True),  # gerúndio simples
     "Ger-S":          _tam("nonfinite", finite=False, progressive=True),  # gerúndio simples (BP label)
     # -- English ---------------------------------------------------------------
