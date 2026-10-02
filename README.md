@@ -4,7 +4,7 @@ Code for a COLING 2027 submission analysing how the temporal reading
 (anteriority / posteriority / simultaneity) of adverbial perfect participial
 clauses is cued across four varieties of Portuguese, using the
 [DRIPPS](https://github.com/johnycordeiro/DRIPPS) corpus (993 annotated
-sentences, plus a 150-sentence second batch; Silvano et al., LDK 2023).
+sentences, plus two later batches of 150 and 95 sentences; Silvano et al., LDK 2023).
 
 ## Questions
 
@@ -29,9 +29,10 @@ make all
 | `src/dripps/leakage.py` | blocks the definitionally circular `DR` / `SR-SC` columns |
 | `src/dripps/evaluate.py` | grouped CV, repeated folds, bootstrap intervals |
 | `src/dripps/results.py` | one place that locates and reads `results/tables/` for the viewer and the app |
+| `src/dripps/hierarchical.py` | B6 helpers: one-hot partial pooling, bootstrap LRT, block weights |
 | `src/dripps/interpret.py` | block ablation/permutation importance, coefficients, tree rules and structure |
 | `src/dripps/explain.py` | TreeSHAP for the two ensemble rungs |
-| `experiments/` | `00_ingest` (second batch, xlsx → csv) `01_audit` `02_baselines` `03_cue_hierarchy` `04_variety_hierarchies` `05_explain` `06_viewer` |
+| `experiments/` | `00_ingest` (later batches, xlsx → csv) `01_audit` `02_baselines` `03_cue_hierarchy` `04_variety_hierarchies` `05_explain` `06_viewer` `07_hierarchical` |
 | `docs/` | [plan](docs/PROJECT_PLAN.md) · [scheme](docs/ANNOTATION_SCHEME.md) · [audit](docs/DATA_AUDIT.md) · [findings](docs/FINDINGS.md) · [linguistics](docs/LINGUISTICS.md) · [methods](docs/methods.md) · [deploy](docs/DEPLOY.md) · [refs](docs/references.bib) |
 | `results/viewer.html` | generated dashboard — `make viewer`, then open it in a browser |
 | `app/` | interactive explorer (Streamlit): corpus filter with mispredicted-only view, model pages, error analysis. `make app`, then open http://localhost:8501; to share it, see [deploy](docs/DEPLOY.md) |
@@ -55,6 +56,7 @@ The corpus is by Silvano, Cordeiro, Leal & Pais and should be cited as
 
 `data/raw/dripps_full.csv` is the original export (993 rows). `dripps_violeta.csv` is a
 second batch of 150 Portuguese sentences (50 each EP, AP, MP; IDs `PTEUV…`, `PTAOV…`,
-`PTMZV…`) converted from `data/raw/archive/Dados_Violeta.xlsx` by `make ingest`. `io.load`
-reads both and adds a `batch` column. The batch has no `SR-SC` annotation; see
-[the annotation scheme](docs/ANNOTATION_SCHEME.md#second-annotation-batch).
+`PTMZV…`) converted from `data/raw/archive/Dados_Violeta.xlsx` by `make ingest`. `dripps_abergaria.csv` is a third batch of 95 EP sentences (IDs `PTEUJ…`) from
+`data/raw/DADOS_João_Abergaria_PE.xlsx`, converted by the same step after dropping three duplicates. `io.load`
+reads all three and adds a `batch` column. The later batches have no `SR-SC` annotation; see
+[the annotation scheme](docs/ANNOTATION_SCHEME.md#later-annotation-batches).
