@@ -1,0 +1,4 @@
+model,macro_f1,ci_lo,ci_hi,n,C_all_data
+M0 cues,0.6952,0.6648,0.7263,1038,
+M1 + intercepts,0.7041,0.6737,0.7333,1038,
+M2 + slopes,0.6996,0.6698,0.7293,1038,0.01

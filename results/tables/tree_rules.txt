@@ -1,7 +1,7 @@
 |--- mc_durative <= 0.50
 |   |--- pos_nonfinal <= 0.50
 |   |   |--- mc_perfective <= 0.50
-|   |   |   |--- class: Post
+|   |   |   |--- class: Ant
 |   |   |--- mc_perfective >  0.50
 |   |   |   |--- class: Post
 |   |--- pos_nonfinal >  0.50

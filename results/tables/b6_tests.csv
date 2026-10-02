@@ -1,0 +1,9 @@
+term,df,dev_drop,p_boot,p_boot_holm
+intercepts (base rates),6,34.15938,0.00332,
+"slopes, all cues",102,127.96366,0.03322,
+"slopes, position",6,12.24893,0.06977,0.299
+"slopes, connector",6,5.74069,0.15282,0.45847
+"slopes, aspect_mc",18,33.65626,0.04983,0.299
+"slopes, aspect_sc",18,15.59491,0.68106,0.68106
+"slopes, tense_mc",42,56.63353,0.04983,0.299
+"slopes, interaction",12,17.54363,0.21262,0.45847
