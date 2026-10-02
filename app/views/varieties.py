@@ -9,11 +9,10 @@ from data import BLOCK_NAMES, corpus, table
 def render():
     st.title("RQ2 · the four Portuguese varieties")
     sizes = corpus().groupby("variety").size()
-    st.warning(f"Descriptive only: five separate fits of {sizes.min()}–{sizes.max()} sentences. Negative importances mean dropping "
-               "a cue helped, which is overfitting. The confirmatory answer needs the pooled model (B6).",
-               icon=":material/warning:")
+    st.caption(f"Tabs 2-3 are descriptive: five separate fits of {sizes.min()}–{sizes.max()} sentences, where negative "
+               "importances mean dropping a cue helped (overfitting). The pooled model (B6) is the test.")
     df = corpus()
-    t1, t2, t3 = st.tabs(["Base rates", "Cue ranks", "Performance"])
+    t1, t2, t3, t4 = st.tabs(["Base rates", "Cue ranks", "Performance", "Pooled model (B6)"])
     with t1:
         st.altair_chart(stacked_share(counts_by(df, "variety"), "variety", sort=["EP", "BP", "AP", "MP", "BE"]))
         cue = st.selectbox("Readings by cue, per variety",
@@ -54,3 +53,25 @@ def render():
                 tooltip=["variety", "model", alt.Tooltip("macro_f1:Q", format=".3f"), "n"])
             st.altair_chart(chart.properties(height=300))
             st.caption("Per-variety logit (3 repeats) against the majority floor.")
+    with t4:
+        tests, perf, w = table("b6_tests.csv"), table("b6_performance.csv"), table("b6_weights.csv")
+        if tests is None or perf is None or w is None:
+            return
+        st.markdown("One model over EP, BP, AP, MP: cues, then **+ variety intercepts** (base rates), then "
+                    "**+ variety × cue slopes** (cue weights). p-values are parametric bootstrap (outcomes redrawn from the null model).")
+        st.dataframe(tests.rename(columns={"dev_drop": "deviance drop", "p_boot": "p (bootstrap)",
+                                           "p_boot_holm": "p (Holm, blocks)", "p_chi2": "p (χ², cross-check)"}),
+                     hide_index=True, column_config={c: st.column_config.NumberColumn(format="%.3f")
+                                                     for c in ["deviance drop", "p (bootstrap)", "p (Holm, blocks)", "p (χ², cross-check)"]})
+        st.dataframe(perf.rename(columns={"macro_f1": "macro-F1", "ci_lo": "CI low", "ci_hi": "CI high"}),
+                     hide_index=True, column_config={c: st.column_config.NumberColumn(format="%.3f")
+                                                     for c in ["macro-F1", "CI low", "CI high"]})
+        w["block"] = w["block"].map(BLOCK_NAMES)
+        ch = alt.Chart(w).mark_bar().encode(
+            x=alt.X("variety:N", sort=["EP", "BP", "AP", "MP"], title=None), xOffset="variety:N",
+            y=alt.Y("weight:Q", title="block weight (logit scale)"), color=alt.Color("variety:N", legend=None),
+            tooltip=["block", "variety", alt.Tooltip("weight:Q", format=".3f"), "rank"]).properties(width=110, height=160)
+        err = alt.Chart(w).mark_rule().encode(x="variety:N", xOffset="variety:N", y="ci_lo:Q", y2="ci_hi:Q")
+        st.altair_chart((ch + err).facet(column=alt.Column("block:N", title=None, sort=list(BLOCK_NAMES.values()))))
+        st.caption("Block weight = mean norm of the block's centred logit contribution within the variety; bars are 95% "
+                   "group-bootstrap intervals, conditional on the CV-chosen shrinkage.")

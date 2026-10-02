@@ -348,7 +348,7 @@ S.ladder = () => {
   const rows = D.baselines.slice().sort((a, b) => b.macro_f1 - a.macro_f1);
   const bars = rows.map(r => ({
     label: r.model, v: r.macro_f1, lo: r.ci_lo, hi: r.ci_hi,
-    colour: /circular/.test(r.model) ? "var(--warn)" : "var(--accent)"}));
+    colour: /^circular \(/.test(r.model) ? "var(--warn)" : "var(--accent)"}));
   frag.appendChild(panel("Out-of-fold macro-F1",
     "Repeated grouped cross-validation, intervals from resampling sentence groups.",
     barsCI(bars, {showCI: true})));
@@ -435,7 +435,7 @@ S.tree = () => {
   const out = el("div", {id: "leafout"}, el("p", {class: "empty",
     text: "Select a leaf to read the sentences it covers."}));
   frag.appendChild(panel("Depth-3 tree",
-    `Fit on all ${D.shap.ids.length} rows so the splits can be read. Branches go left when the test fails. Click a leaf for its sentences.`,
+    `Fit on all ${D.meta.n_rows} rows so the splits can be read. Branches go left when the test fails. Click a leaf for its sentences.`,
     [holder, classLegend(classes), out]));
 
   window.showLeaf = (i) => {
@@ -518,7 +518,7 @@ S.shap = () => {
   frag.appendChild(body);
 
   frag.appendChild(el("div", {class: "warnbox", html:
-    `<b>Not on the ladder's scale, and not on each other's.</b> These describe models fit on all ${D.shap.ids.length} rows, so they are not out-of-fold and do not belong beside the macro-F1 figures. The forest's leaves hold class probabilities and XGBoost's hold log-odds, so compare the two by rank only. Shapley values also split credit between correlated cues, which is why this is a check on ordering rather than a rival to the ablation.`}));
+    `<b>Not on the ladder's scale, and not on each other's.</b> These describe models fit on all ${D.meta.n_rows} rows, so they are not out-of-fold and do not belong beside the macro-F1 figures. The forest's leaves hold class probabilities and XGBoost's hold log-odds, so compare the two by rank only. Shapley values also split credit between correlated cues, which is why this is a check on ordering rather than a rival to the ablation.`}));
 
   // per-sentence attribution
   const picker = el("select", {});
@@ -735,7 +735,7 @@ document.getElementById("stamp").append(
   el("span", {text: `${m.n_total} corpus rows → ${m.n_rows} analysed`}));
 
 const tiles = el("div", {class: "tiles"});
-const best = D.baselines.filter(r => !/circular/.test(r.model))
+const best = D.baselines.filter(r => !/^circular \(/.test(r.model))
   .sort((a, b) => b.macro_f1 - a.macro_f1)[0];
 const topCue = D.cue_importance.slice()
   .sort((a, b) => b.importance_ablation - a.importance_ablation)[0];
