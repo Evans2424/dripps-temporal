@@ -35,7 +35,7 @@ def test_auxiliary_pattern_actually_matches():
 
 def test_span_recovery_counts(df):
     aux = io.has_apc_auxiliary(df)
-    assert aux[df.is_portuguese].sum() == 943
+    assert aux[df.is_portuguese].sum() == 1038
     assert aux[~df.is_portuguese].sum() == 199
     assert (io.count_apc_auxiliary(df) > 1).sum() == 24
 
@@ -44,7 +44,7 @@ def test_audit_does_not_hardcode_span_counts():
     """The audit must compute these, not restate them as prose constants."""
     src = (ROOT / "experiments/01_audit.py").read_text(encoding="utf-8")
     assert "has_apc_auxiliary" in src
-    assert "/793" not in src and "/200 " not in src
+    assert not re.search(r"\b\d{3,4}\s*/\s*\d{3,4}\b", src), "a count/total pair is hard-coded"
 
 
 # --- **params made get_params() return {} and clone() drop every setting -----
@@ -153,8 +153,8 @@ def test_logit_coefficients_handle_two_classes():
 
 def test_default_path_is_repo_anchored(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
-    assert io.DEFAULT_RAW.is_absolute() and io.DEFAULT_RAW.exists()
-    assert len(io.load()) == 1143
+    assert io.ORIGINAL_RAW.is_absolute() and io.ORIGINAL_RAW.exists()
+    assert len(io.load()) == 1238
 
 
 # --- tree serialisation must describe the same tree export_text prints -------
@@ -412,6 +412,28 @@ def test_deployed_app_pins_match_the_pipeline_and_its_data_is_tracked():
     for banned in ("shap", "numba", "statsmodels"):
         assert banned not in app, f"{banned} is not imported by the app; keep the cloud install light"
 
-    needed = ["results/tables/shap_forest.csv", "results/tables/shap_xgboost.csv", "data/raw/dripps_full.csv", "data/raw/dripps_violeta.csv"]
+    needed = ["results/tables/shap_forest.csv", "results/tables/shap_xgboost.csv", "data/raw/dripps_full.csv", "data/raw/dripps_violeta.csv", "data/raw/dripps_abergaria.csv",
+              "results/tables/b6_tests.csv", "results/tables/b6_performance.csv", "results/tables/b6_weights.csv"]
     ignored = subprocess.run(["git", "check-ignore", *needed], cwd=root, capture_output=True, text=True)
     assert ignored.stdout.strip() == "", f"the deployed app reads gitignored files: {ignored.stdout}"
+
+
+def test_b6_bootstrap_detects_planted_slope_and_not_null():
+    """B6's test: a planted variety x cue slope is rejected, no slope is not; weights are finite and scale-free."""
+    import numpy as np
+    import pandas as pd
+    from dripps.hierarchical import block_weights, boot_lrt, design
+    from sklearn.linear_model import LogisticRegression
+
+    rng = np.random.default_rng(0)
+    n, lv = 600, ("a", "b", "c", "d")
+    X = pd.DataFrame({"x": rng.integers(0, 2, n)})
+    v = pd.Series(rng.choice(lv, n))
+    D1 = design(X, v, lv, intercepts=True, slopes=False)
+    D2 = design(X, v, lv, intercepts=True, slopes=True)
+    flat = pd.Series(np.where(rng.random(n) < 0.5, "Ant", "Post"))
+    planted = pd.Series(np.where((X.x == 1) & (v == "a"), "Post", np.where(rng.random(n) < 0.5, "Ant", "Post")))
+    assert boot_lrt(D1, D2, planted, rng, 40)[1] < 0.05
+    assert boot_lrt(D1, D2, flat, rng, 40)[1] > 0.05
+    w = block_weights(LogisticRegression(C=1.0, max_iter=5000).fit(D2.to_numpy(), planted), D2, v, {"x": ["x"]}, lv)
+    assert w.loc["x", "a"] > w.loc["x", ["b", "c", "d"]].max()  # the planted variety's cue weighs most
