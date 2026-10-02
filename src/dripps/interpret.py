@@ -29,7 +29,7 @@ import pandas as pd
 from sklearn.base import clone
 from sklearn.model_selection import StratifiedGroupKFold
 
-from .evaluate import macro_f1
+from .evaluate import macro_f1, resample_group_rows
 from .features import DERIVED_ONLY_BLOCKS, recompute_derived
 from .schema import ASPECT_PRIMITIVES, SEED
 
@@ -54,13 +54,9 @@ def _group_bootstrap_ci(y, groups, base, variants, *, n_boot, alpha=0.05, seed=S
     """
     labels = sorted(pd.unique(y))
     rng = np.random.default_rng(seed)
-    uniq = np.unique(groups)
-    rows_by_group = {g: np.flatnonzero(groups == g) for g in uniq}
-
     draws = np.empty(n_boot)
     for b in range(n_boot):
-        picked = rng.choice(uniq, size=len(uniq), replace=True)
-        idx = np.concatenate([rows_by_group[g] for g in picked])
+        idx = resample_group_rows(groups, rng)
         var = variants[rng.integers(len(variants))]
         draws[b] = macro_f1(y[idx], base[idx], labels) - macro_f1(y[idx], var[idx], labels)
     return float(np.quantile(draws, alpha / 2)), float(np.quantile(draws, 1 - alpha / 2))
@@ -203,12 +199,10 @@ def adjusted_class_probabilities(
                 for c in classes}, list(fitted.classes_)
 
     point, labels = estimate(X, y)
-    uniq = np.unique(groups)
-    rows_by_group = {g: np.flatnonzero(groups == g) for g in uniq}
     rng = np.random.default_rng(seed)
     draws = {c: [] for c in classes}
     for _ in range(n_boot):
-        idx = np.concatenate([rows_by_group[g] for g in rng.choice(uniq, len(uniq))])
+        idx = resample_group_rows(groups, rng)
         est, lab = estimate(X.iloc[idx], y[idx])
         if lab != labels:  # a resample missing a reading cannot be compared
             continue
@@ -247,7 +241,7 @@ def tree_rules(tree, feature_names, class_names, *, max_depth=None) -> str:
     from sklearn.tree import export_text
 
     return export_text(
-        tree, feature_names=list(feature_names), max_depth=max_depth or 10,
+        tree, feature_names=list(feature_names), max_depth=10 if max_depth is None else max_depth,
         class_names=list(class_names), decimals=2,
     )
 

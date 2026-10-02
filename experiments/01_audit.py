@@ -79,9 +79,9 @@ def main() -> None:
     out += ["## Definitional leakage", "",
             "`SR-SC` and `DR` are partly *defined* by temporal order and are excluded "
             "from every model by `dripps.leakage.assert_no_leakage`.", ""]
-    ann = df[df["SR-SC"] != ""]  # the second batch has no SR-SC annotation
+    ann = df[df["SR-SC"] != ""]  # the later batches have no SR-SC annotation
     out += [f"Computed on the {len(ann)} rows annotated for `SR-SC` "
-            f"({len(df) - len(ann)} from the second batch have none).", ""]
+            f"({len(df) - len(ann)} from the later batches have none).", ""]
     leak = pd.DataFrame([stats.association(ann, c) for c in schema.LEAKY_COLUMNS])
     out += [md_table(leak.set_index("cue")[["v", "chi2", "dof"]].round(3), "column"), ""]
     sr = df[df["SR-SC"].isin(["before", "after"])]

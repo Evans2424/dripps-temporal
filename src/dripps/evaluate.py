@@ -58,6 +58,14 @@ def macro_f1_per_repeat(y, preds, labels=None) -> np.ndarray:
     return np.array([macro_f1(y, p, labels) for p in preds])
 
 
+def resample_group_rows(groups, rng) -> np.ndarray:
+    """Row indices of one bootstrap draw: sentence groups sampled with replacement, rows kept whole."""
+    groups = np.asarray(groups)
+    uniq = np.unique(groups)
+    by = {g: np.flatnonzero(groups == g) for g in uniq}
+    return np.concatenate([by[g] for g in rng.choice(uniq, size=len(uniq), replace=True)])
+
+
 def bootstrap_group_ci(y, preds, groups, *, n_boot=2000, alpha=0.05, seed=SEED):
     """Percentile CI from resampling *sentence groups* with replacement.
 
@@ -70,13 +78,9 @@ def bootstrap_group_ci(y, preds, groups, *, n_boot=2000, alpha=0.05, seed=SEED):
     labels = _labels(y)
     rng = np.random.default_rng(seed)
 
-    uniq = np.unique(groups)
-    rows_by_group = {g: np.flatnonzero(groups == g) for g in uniq}
-
     draws = np.empty(n_boot)
     for b in range(n_boot):
-        picked = rng.choice(uniq, size=len(uniq), replace=True)
-        idx = np.concatenate([rows_by_group[g] for g in picked])
+        idx = resample_group_rows(groups, rng)
         rep = rng.integers(len(preds))  # fold the seed jitter in too
         draws[b] = macro_f1(y[idx], preds[rep][idx], labels)
     return float(np.quantile(draws, alpha / 2)), float(np.quantile(draws, 1 - alpha / 2))
@@ -96,19 +100,3 @@ def score(model, X, y, groups, *, label="", **kw) -> dict:
         "_preds": preds,
         "_per_repeat": per_repeat,
     }
-
-
-def per_class_f1(y, preds, labels=None) -> pd.DataFrame:
-    y = np.asarray(y)
-    labels = labels or _labels(y)
-    arr = np.vstack([
-        f1_score(y, p, average=None, labels=labels, zero_division=0) for p in preds
-    ])
-    return pd.DataFrame({"label": labels, "f1": arr.mean(0), "sd": arr.std(0, ddof=1)})
-
-
-def confusion(y, preds, labels=None) -> pd.DataFrame:
-    y = np.asarray(y)
-    labels = labels or _labels(y)
-    total = sum(confusion_matrix(y, p, labels=labels) for p in preds) / len(preds)
-    return pd.DataFrame(total, index=labels, columns=labels)

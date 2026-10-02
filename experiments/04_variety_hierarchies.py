@@ -54,6 +54,7 @@ def main() -> None:
     print("\nModel performance per variety:")
     perf = pd.DataFrame(floors).T.round(3)
     print(perf.to_string())
+    perf["n"] = perf["n"].astype(int)
     perf.index.name = "variety"
     perf.to_csv(ROOT / "results/tables/variety_performance.csv")
 
