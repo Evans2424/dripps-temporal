@@ -1,5 +1,11 @@
 # GPU step only (make encoder); keep out of requirements.txt and app/requirements.txt.
--r requirements.txt
+# Deliberately unpinned and without `-r requirements.txt`: those pins need Python >= 3.11 and
+# the encoder script uses only these. Checked on pandas 2.3 / numpy 2.2 / scikit-learn 1.7
+# (what pip resolves on Python 3.10); B3 gives the same macro-F1 (0.695) as the pinned stack.
+numpy
+pandas
+scikit-learn
+scipy
 torch
 transformers>=5
 spacy>=3.7
