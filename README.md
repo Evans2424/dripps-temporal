@@ -15,7 +15,7 @@ sentences, plus two later batches of 150 and 95 sentences; Silvano et al., LDK 2
 ## Setup
 
 ```bash
-python3.13 -m venv .venv && .venv/bin/pip install -r requirements.txt
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt   # Python 3.10-3.13
 make all
 ```
 

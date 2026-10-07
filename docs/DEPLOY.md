@@ -32,8 +32,9 @@ so the app shows the numbers the pipeline produced.
 3. Fill in the form:
    - Repository and branch: the ones you pushed.
    - Main file path: `app/streamlit_app.py`
-   - **Advanced settings → Python version: 3.13.** The default is 3.12, the pins
-     were tested on 3.13, and the version cannot be set from the repository.
+   - **Advanced settings → Python version: 3.13** (or any of 3.10-3.13). The default
+     is 3.12; the pins were tested on 3.10 and 3.13 (full suite), and the version
+     cannot be set from the repository.
 4. **Deploy.** The first build takes a few minutes while the packages install.
 
 ## Who can see it
