@@ -65,6 +65,21 @@ def mask_spans(text: str, spans: list[Span], mask: str) -> str:
     return text
 
 
+def mark(text: str, wraps: list[tuple[Span, str, str]]):
+    """Wrap spans in marker strings. Returns (marked text, shift), where shift maps an offset in
+    ``text`` to the same character in the marked text. Spans must not overlap."""
+    out, last = [], 0
+    for (s, e), o, c in sorted(wraps):
+        out += [text[last:s], o, text[s:e], c]
+        last = e
+    out.append(text[last:])
+
+    def shift(pos: int) -> int:
+        return pos + sum((pos >= s) * len(o) + (pos >= e) * len(c) for (s, e), o, c in wraps)
+
+    return "".join(out), shift
+
+
 def main_verb_span(doc, apc: tuple[Span, Span]) -> Span | None:
     """Finite verb of the root clause, from a spaCy ``Doc``; None if it sits inside the APC."""
     roots = [t for t in doc if t.dep_ == "ROOT"]

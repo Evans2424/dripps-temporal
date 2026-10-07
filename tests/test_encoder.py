@@ -61,3 +61,43 @@ def test_encoder_folds_are_the_ones_cv_predict_uses():
     X = np.arange(120, dtype=float)[:, None]
     evaluate.cv_predict(Spy(), X, y, g, n_repeats=1, seed=7)
     assert [t.astype(int).tolist() for t in seen] == [te.tolist() for _, te in evaluate.folds(y, g, 7)]
+
+
+def test_mark_shifts_offsets_to_the_marked_text():
+    t = "Ele saiu, tendo dito que sim."
+    group, verb = (10, 20), (0, 3)
+    marked, shift = ablate.mark(t, [(group, "[[ ", " ]]"), (verb, "<< ", " >>")])
+    assert marked == "<< Ele >> saiu, [[ tendo dito ]] que sim."
+    assert marked[shift(t.index("dito")):][:4] == "dito" and marked[shift(0):][:3] == "Ele"
+    assert ablate.mark(t, [])[0] == t
+
+
+def test_select_and_predict_tunes_only_on_the_training_rows():
+    from dripps import encoder
+
+    labels = ["Ant", "Post", "Simul"]
+    y = np.array(labels * 40)
+    g = np.arange(120) // 2
+    texts = [str(i) for i in range(120)]
+    train, test = next(iter(evaluate.folds(y, g, 3)))
+    calls = []
+
+    def fake_fit(tr_texts, y_tr, ev, *, labels, seed, lr, epochs, train_marks=None, eval_marks=None):
+        calls.append((set(tr_texts), set(next(iter(ev.values()))), lr))
+        out = {}
+        for k, ts in ev.items():  # lr 5e-5 "learns" (returns the true label); 3e-5 always says Ant
+            p = np.full((len(ts), 3), 0.1)
+            for row, t in enumerate(ts):
+                p[row, labels.index(y[int(t)]) if lr == 5e-5 else 0] = 0.8
+            out[k] = p
+        return out
+
+    cfgs = [dict(lr=3e-5, epochs=1), dict(lr=5e-5, epochs=1)]
+    probs, cfg = encoder.select_and_predict([texts[i] for i in train], y[train], g[train],
+                                            {"orig": [texts[i] for i in test]}, labels=labels, seed=3,
+                                            configs=cfgs, fit=fake_fit)
+    held = {texts[i] for i in test}
+    assert all(not (tr | ev) & held for tr, ev, _ in calls[:2])         # selection never sees the held-out fold
+    assert not calls[0][0] & calls[0][1]                                 # inner fit/validation rows are disjoint
+    assert not {g[int(t)] for t in calls[0][0]} & {g[int(t)] for t in calls[0][1]}  # and so are their groups
+    assert cfg["lr"] == 5e-5 and len(calls) == 3 and probs["orig"].shape == (len(test), 3)

@@ -32,6 +32,7 @@ PRODUCED_BY = {
     "b3_by_batch.csv": "make baselines",
     "t1_encoder.csv": "make encoder",
     "t1_encoder_preds.csv": "make encoder",
+    "t1_encoder_config.csv": "make encoder",
     "t3_ablation.csv": "make encoder",
     "t3_span_sample.csv": "make encoder",
     "shap_summary.csv": "make explain",
