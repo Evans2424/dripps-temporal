@@ -28,7 +28,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.base import clone
 from sklearn.metrics import f1_score
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -160,7 +159,7 @@ def main() -> None:
     chosen = []
     for r in range(n_seeds):
         for k, (train, test) in enumerate(evaluate.folds(y, g, SEED + r)):
-            b3p[r, test] = clone(models.b3_logit()).fit(X[train], y[train]).predict_proba(X[test])
+            b3p[r, test] = models.b3_logit().fit(X[train], y[train]).predict_proba(X[test])
             prior = np.array([(y[train] == c).mean() for c in labels])
             for var in used:
                 f = cache / f"{var}_s{r}_f{k}.npz"
