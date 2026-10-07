@@ -32,7 +32,8 @@ make all
 | `src/dripps/hierarchical.py` | B6 helpers: one-hot partial pooling, bootstrap LRT, block weights |
 | `src/dripps/interpret.py` | block ablation/permutation importance, coefficients, tree rules and structure |
 | `src/dripps/explain.py` | TreeSHAP for the two ensemble rungs |
-| `experiments/` | `00_ingest` (later batches, xlsx → csv) `01_audit` `02_baselines` `03_cue_hierarchy` `04_variety_hierarchies` `05_explain` `06_viewer` `07_hierarchical` |
+| `src/dripps/encoder.py`, `ablate.py` | T1/T3: tuned xlm-roberta fine-tuning (plain and verb-marked), and the text perturbations for the ablation. Needs a GPU: `make encoder` with `requirements-neural.txt`; not part of `make all` |
+| `experiments/` | `00_ingest` (later batches, xlsx → csv) `01_audit` `02_baselines` `03_cue_hierarchy` `04_variety_hierarchies` `05_explain` `06_viewer` `07_hierarchical` `08_encoder` (GPU) |
 | `docs/` | [plan](docs/PROJECT_PLAN.md) · [scheme](docs/ANNOTATION_SCHEME.md) · [audit](docs/DATA_AUDIT.md) · [findings](docs/FINDINGS.md) · [linguistics](docs/LINGUISTICS.md) · [methods](docs/methods.md) · [deploy](docs/DEPLOY.md) · [refs](docs/references.bib) |
 | `results/viewer.html` | generated dashboard — `make viewer`, then open it in a browser |
 | `app/` | interactive explorer (Streamlit): corpus filter with mispredicted-only view, model pages, error analysis. `make app`, then open http://localhost:8501; to share it, see [deploy](docs/DEPLOY.md) |

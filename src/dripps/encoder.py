@@ -36,6 +36,7 @@ def fit_predict(train_texts, y_train, eval_texts: dict, *, labels, seed, lr, epo
     tok = AutoTokenizer.from_pretrained(checkpoint)
     enc = AutoModel.from_pretrained(checkpoint, dtype=torch.float32).to(dev)
     n_marks = len(train_marks[0]) if train_marks else 0
+    assert not n_marks or eval_marks is not None, "trained with marks but no eval marks"
     head = torch.nn.Sequential(torch.nn.Dropout(0.1),
                                torch.nn.Linear(enc.config.hidden_size * (1 + n_marks), len(labels))).to(dev)
     y = torch.tensor([labels.index(v) for v in y_train])
@@ -81,8 +82,6 @@ def fit_predict(train_texts, y_train, eval_texts: dict, *, labels, seed, lr, epo
             chunks = [logits(texts[i:i + 64], m[i:i + 64] if m else None).softmax(-1).cpu().numpy()
                       for i in range(0, len(texts), 64)]
             probs[name] = np.concatenate(chunks) if chunks else np.empty((0, len(labels)))
-    del enc, head, opt
-    torch.cuda.empty_cache()
     return probs
 
 

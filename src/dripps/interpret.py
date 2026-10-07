@@ -34,10 +34,6 @@ from .features import DERIVED_ONLY_BLOCKS, recompute_derived
 from .schema import ASPECT_PRIMITIVES, SEED
 
 
-def _folds(X, y, groups, n_splits, seed):
-    return list(evaluate.folds(y, groups, seed, n_splits))
-
-
 def _group_bootstrap_ci(y, groups, base, variants, *, n_boot, alpha=0.05, seed=SEED):
     """Percentile CI for a *drop* in macro-F1, resampling sentence groups.
 
@@ -104,7 +100,7 @@ def block_ablation_importance(
     reduced = {name: np.empty(len(y), dtype=object) for name in blocks}
     per_fold: dict[str, list[float]] = {name: [] for name in blocks}
 
-    for train, test in _folds(X, y, groups, n_splits, seed):
+    for train, test in evaluate.folds(y, groups, seed, n_splits):
         full = clone(model).fit(X.iloc[train], y[train])
         base[test] = full.predict(X.iloc[test])
         fold_base = macro_f1(y[test], base[test], labels)
@@ -147,7 +143,7 @@ def block_permutation_importance(
     permuted = {n: [np.empty(len(y), dtype=object) for _ in range(n_repeats)] for n in live}
     per_fold: dict[str, list[float]] = {name: [] for name in live}
 
-    for train, test in _folds(X, y, groups, n_splits, seed):
+    for train, test in evaluate.folds(y, groups, seed, n_splits):
         est = clone(model).fit(X.iloc[train], y[train])
         X_test = X.iloc[test]
         base[test] = est.predict(X_test)

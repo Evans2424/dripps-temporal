@@ -144,7 +144,7 @@ dripps-temporal/
 │   ├── evaluate.py               # GroupKFold, macro-F1, bootstrap CIs
 │   ├── interpret.py              # permutation importance, SHAP, surrogate rules
 │   ├── stats.py                  # χ², Cramér's V, LRT, hierarchical fit
-│   └── neural/                   # finetune.py, ablate.py, attention.py
+│   ├── encoder.py, ablate.py     # T1/T3 (built); attention.py (T2) not built
 ├── experiments/
 │   ├── 01_audit.py  02_baselines.py  03_cue_hierarchy.py
 │   ├── 04_variety_interaction.py     05_transfer_lovo.py

@@ -5,19 +5,24 @@ Hyperparameters are chosen inside each training fold (encoder.select_and_predict
 B3's folds, and each (variant, seed, fold) is cached in results/cache_encoder/ so a crash in a
 multi-hour run loses one fold. T3 perturbations are scored by the plain model's fold model, so
 the ablation is out-of-fold and no checkpoint is kept. T1 also fuses B3 and encoder
-probabilities (fixed average, nothing tuned) to ask whether text adds to the inventory.
+probabilities (fixed average, nothing tuned) to ask whether text adds to the inventory; the
+encoder is trained with class-weighted loss and B3 is not, so its posteriors are multiplied by the
+training-fold class prior (and renormalised) before they are averaged.
 
 Writes results/tables/t1_encoder.csv, t1_encoder_preds.csv, t1_encoder_config.csv,
 t3_ablation.csv and t3_span_sample.csv (50 rows to check span recovery by hand).
 
-  --variant plain|marked|both   which variants to compute (cached ones are reused)
+  --variant plain|marked|both   which variants to compute; tables always use every variant that is
+                                fully cached, so run each variant, then any run rewrites both
   --smoke                       100 rows, one seed, one config, one epoch, writes nothing
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -47,7 +52,9 @@ def build_variants(texts, mask):
         t = texts[i]
         apc = ablate.apc_span(t)
         verb = ablate.main_verb_span(doc, apc) if apc else None
-        adv = ablate.adverbial_spans(t)
+        # an adverbial inside the APC verb group ("tendo já concluído") is part of the construction, not an
+        # independent temporal cue, so it is neither masked nor drawn as a control
+        adv = [a for a in ablate.adverbial_spans(t) if not (apc and apc[0][0] <= a[0] < apc[0][1])]
         # a control may not remove the APC itself, the verb it is compared with, or (for the adverbial
         # control) the adverbials; masking "tendo" anywhere would change the construction under test
         keep = ablate.tendo_spans(t) + ([apc[0]] if apc else []) + ([verb] if verb else [])
@@ -59,7 +66,7 @@ def build_variants(texts, mask):
             out["ctrl_main_verb"][i] = ablate.mask_random(t, keep, 1, mask, rng)
         if adv:
             out["mask_adverbials"][i] = ablate.mask_spans(t, adv, mask)
-            out["ctrl_adverbials"][i] = ablate.mask_random(t, ablate.tendo_spans(t) + ([apc[1]] if apc else []) + ([verb] if verb else []) + adv, len(adv), mask, rng)
+            out["ctrl_adverbials"][i] = ablate.mask_random(t, keep + adv, len(adv), mask, rng)
         first = doc[0]
         lower = first.pos_ not in ("PROPN", "X", "NUM") and not (len(first) > 1 and first.is_upper)
         out["move_apc_initial"][i] = ablate.move_apc_initial(t, lower_first=lower)
@@ -130,23 +137,32 @@ def main() -> None:
     labels = sorted(pd.unique(y))
     n_seeds = 1 if smoke else N_SEEDS
     configs = [dict(lr=3e-5, epochs=1)] if smoke else encoder.CONFIGS
-    cache = ROOT / "results/cache_encoder"
-    cache.mkdir(parents=True, exist_ok=True)
-    print(f"{len(df)} rows, {n_seeds} seeds, {len(configs)} configs, variants {todo}", flush=True)
 
     perturbed, span_df, marked, marks = build_variants(texts, mask)
+    import transformers
+    # a cached fold is only valid for the exact inputs, settings and library versions that produced it
+    key = hashlib.sha1(json.dumps([texts, marked, perturbed, labels, encoder.CONFIGS, encoder.HPARAMS,
+                                   encoder.CHECKPOINT, SEED, transformers.__version__]).encode()).hexdigest()[:10]
+    cache = ROOT / "results/cache_encoder" / key
+    cache.mkdir(parents=True, exist_ok=True)
+    cached = lambda var: all((cache / f"{var}_s{r}_f{k}.npz").exists()  # noqa: E731
+                             for r in range(n_seeds) for k in range(evaluate.N_SPLITS))
+    used = [v for v in ("plain", "marked") if v in todo or (not smoke and cached(v))]
+    print(f"{len(df)} rows, {n_seeds} seeds, {len(configs)} configs, computing {todo}, tables from {used}", flush=True)
     print({v: sum(t is not None for t in perturbed[v]) for v in VARIANTS},
           "| marks:", sum(m[0] is not None for m in marks), "participle,",
           sum(m[1] is not None for m in marks), "main verb", flush=True)
 
-    probs = {v: np.full((n_seeds, len(y), len(labels)), np.nan) for v in todo}
+    probs = {v: np.full((n_seeds, len(y), len(labels)), np.nan) for v in used}
+    adj = {v: np.full_like(probs[v], np.nan) for v in used}  # encoder posteriors with the loss weighting undone
     b3p = np.full((n_seeds, len(y), len(labels)), np.nan)
-    vprobs = {v: np.full_like(probs["plain"], np.nan) for v in VARIANTS} if "plain" in todo else {}
+    vprobs = {v: np.full_like(probs["plain"], np.nan) for v in VARIANTS} if "plain" in used else {}
     chosen = []
     for r in range(n_seeds):
         for k, (train, test) in enumerate(evaluate.folds(y, g, SEED + r)):
             b3p[r, test] = clone(models.b3_logit()).fit(X[train], y[train]).predict_proba(X[test])
-            for var in todo:
+            prior = np.array([(y[train] == c).mean() for c in labels])
+            for var in used:
                 f = cache / f"{var}_s{r}_f{k}.npz"
                 if f.exists() and not smoke:
                     z = np.load(f)
@@ -168,9 +184,11 @@ def main() -> None:
                         for v in VARIANTS:
                             flat[f"i_{v}"], flat[f"p_{v}"] = np.array(where[v], dtype=int), out[v]
                     if not smoke:
-                        np.savez(f, **flat)
+                        np.savez(f.with_suffix(".tmp.npz"), **flat)
+                        os.replace(f.with_suffix(".tmp.npz"), f)  # a crash mid-write must not leave a half file
                     z = flat
                 probs[var][r, test] = z["orig"]
+                adj[var][r, test] = z["orig"] * prior / (z["orig"] * prior).sum(1, keepdims=True)
                 chosen.append({"variant": var, "seed": r, "fold": k, **json.loads(str(z["cfg"]))})
                 if var == "plain":
                     for v in VARIANTS:
@@ -184,13 +202,13 @@ def main() -> None:
     # ---- T1: encoders and fusion vs B3, same seeds and folds ----
     lab = np.array(labels)
     guess = {"B3 logit": lab[b3p.argmax(-1)]}
-    for var in todo:
+    for var in used:
         guess[f"encoder {var}"] = lab[probs[var].argmax(-1)]
         for w in (0.5, 0.25, 0.75):  # 0.5 is the pre-set headline; the others are post hoc sensitivity
             tag = "" if w == 0.5 else " (post hoc)"
-            guess[f"B3 + encoder {var}, w={w}{tag}"] = lab[((1 - w) * b3p + w * probs[var]).argmax(-1)]
+            guess[f"B3 + encoder {var}, w={w}{tag}"] = lab[((1 - w) * b3p + w * adj[var]).argmax(-1)]
     pairs = [(m, "B3 logit") for m in guess if m != "B3 logit"]
-    if len(todo) == 2:
+    if len(used) == 2:
         pairs.append(("encoder marked", "encoder plain"))
     # Sentences annotated for several APCs appear as identical text with different labels. A text-only
     # model cannot separate them (B3's per-clause features can), so score the other rows on their own.
@@ -209,9 +227,9 @@ def main() -> None:
     pred_rows = pd.concat([pd.DataFrame({
         "variant": var, "id": np.tile(df.ID.to_numpy(), n_seeds), "seed": np.repeat(np.arange(n_seeds), len(y)),
         "true": np.tile(y, n_seeds), "pred": guess[f"encoder {var}"].ravel(),
-        **{f"p_{c}": probs[var][:, :, j].ravel() for j, c in enumerate(labels)}}) for var in todo])
+        **{f"p_{c}": probs[var][:, :, j].ravel() for j, c in enumerate(labels)}}) for var in used])
     pred_rows.round(5).to_csv(tab / "t1_encoder_preds.csv", index=False)
-    if "plain" not in todo:
+    if "plain" not in used:
         return
 
     # ---- T3 (plain model): change in the predicted distribution under each perturbation ----
@@ -243,10 +261,14 @@ def main() -> None:
     span_df.insert(1, "ID", df.ID.to_numpy()[span_df.i])
     # hand-check rows where a span was found: the failure modes are wrong spans, not missing ones
     found = span_df[(span_df.participle != "") & (span_df.main_verb != "")]
-    sample = found.sample(50, random_state=SEED).assign(participle_ok="", main_verb_ok="")
+    sample = found.sample(min(50, len(found)), random_state=SEED).assign(participle_ok="", main_verb_ok="")
     print(f"span recovery: participle {int((span_df.participle != '').sum())}, "
           f"main verb {int((span_df.main_verb != '').sum())}, both {len(found)} of {len(span_df)}")
-    sample.to_csv(tab / "t3_span_sample.csv", index=False)
+    out = tab / "t3_span_sample.csv"
+    if out.exists() and pd.read_csv(out).participle_ok.notna().any():
+        print("t3_span_sample.csv already hand-labelled; left as is")
+    else:
+        sample.to_csv(out, index=False)
     print(pd.DataFrame(rows).round(3).to_string())
 
 
