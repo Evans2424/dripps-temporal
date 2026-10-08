@@ -101,3 +101,11 @@ def test_select_and_predict_tunes_only_on_the_training_rows():
     assert not calls[0][0] & calls[0][1]                                 # inner fit/validation rows are disjoint
     assert not {g[int(t)] for t in calls[0][0]} & {g[int(t)] for t in calls[0][1]}  # and so are their groups
     assert cfg["lr"] == 5e-5 and len(calls) == 3 and probs["orig"].shape == (len(test), 3)
+
+
+def test_methods_doc_names_the_tagger_the_script_loads():
+    root = Path(__file__).resolve().parents[1]
+    model = "pt_core_news_sm"
+    assert model in (root / "experiments/08_encoder.py").read_text()
+    methods = (root / "docs/methods.md").read_text()
+    assert "### `08_encoder.py`" in methods and model in methods

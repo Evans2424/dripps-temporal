@@ -79,6 +79,104 @@ batches. Fitted with scikit-learn: the exact MLE does not converge on the sparse
 design, and rows are redrawn independently in the bootstrap, which ignores the 55
 multi-APC rows' clustering.
 
+### `08_encoder.py` — does the sentence text add to the inventory? (T1, T3)
+
+**Status.** The code is complete and tested; the tuned GPU run is pending, so no
+tuned number is quoted here. A first run with fixed hyperparameters (whole-sentence
+input, learning rate 2e-5, 4 epochs) scored macro-F1 0.469 [0.415, 0.528] against B3's
+0.694 on the same folds. It was under-trained (Ant F1 0.25, seed spread 0.033, about 200
+optimiser steps per fold) and is superseded by the procedure below.
+
+**Question.** B3 reads 17 binary cues that annotators coded. T1 asks whether a
+fine-tuned multilingual encoder, which reads the raw sentence, recovers that signal
+or finds more of it. T3 asks, by perturbing the text, which parts of the sentence the
+encoder uses.
+
+**Input.** Only `sentence_norm`. No annotation column (`DR`, `SR-SC`, `ATMC`, ...) is
+an input, so the leakage guard on the feature models still holds. The connector and
+any temporal adverbial are in the text and are therefore available to the encoder.
+
+**Finding the clauses.** The corpus does not annotate where the participial clause
+(APC) is, so the spans are recovered:
+
+| span | how | tool |
+|---|---|---|
+| APC verb group | exactly one `tendo` (the pattern in `schema.APC_AUXILIARY`), through the participle | rule |
+| participle | the first word after `tendo` that is a participle, skipping only a closed list of adverbs (*já, ainda, também, ...*) and *sido/estado*, within four tokens and no punctuation | rule |
+| main verb | the one finite verb (`VerbForm=Fin`) among the sentence root and its `aux`, `aux:pass` and `cop` children, outside the APC group | spaCy `pt_core_news_sm` |
+| temporal adverbials | a closed lexicon (*depois, antes, dois dias depois, já, ...*), ignoring any inside the APC group | rule |
+
+A participle is a word ending *-ado/-ido/-ído* (with gender and number) or one of a
+short list of irregular stems (*feito, dito, posto, visto, ...*). In a copular APC such
+as *tendo sido campeão*, *sido* is taken as the participle. If something else stands
+between `tendo` and the participle (a subject, an object), or the sentence has two
+`tendo`, the span is **not guessed**: it is missing and the row is left out of that
+perturbation.
+
+The **POS tagger and parser** is spaCy's `pt_core_news_sm` (statistical tagger,
+morphologizer and dependency parser; the entity recogniser and lemmatiser are
+switched off; spaCy 3.8 tested). It does two jobs only: finding the main verb, and
+deciding whether the first word of the main clause is a proper noun, number or
+acronym (`PROPN`, `X`, `NUM`, or all capitals) so that moving the APC to the front
+does not also change that word's capitalisation. The participle is found by the rule
+above, not by the tagger. spaCy is needed only for this step (`requirements-neural.txt`),
+never by the app. On the 1,038 Portuguese rows the participle is found in 943, the main
+verb in 660 (every row with a main verb also has a participle), the APC can be moved in
+437 and an adverbial is present in 382. The main-verb recovery is the weak point:
+the 660 rows are those where the parser found a single finite root, a selected subset.
+`t3_span_sample.csv` holds 50 rows with both spans for a hand check of both columns.
+
+**Architecture.** `xlm-roberta-base` (12 layers, 768 dimensions, all weights
+fine-tuned) with a head of dropout (0.1) and one linear layer. Two variants:
+
+- *plain*: the head sees the first-token vector.
+- *marked*: the text becomes `[[ tendo X ]]` around the APC group and `<< verb >>` around
+  the main verb. They are ordinary strings, not new tokens, because randomly
+  initialised marker embeddings do poorly on ~800 rows. The head sees the first-token
+  vector plus the vectors of the first sub-word of the participle and of the main verb,
+  located through the tokenizer's character offsets. A missing span falls back to the
+  first-token vector.
+
+Training: AdamW (weight decay 0.01), linear schedule with 10% warm-up, batch 16,
+maximum length 256, gradient clipping at 1, bf16 autocast on GPU, cross-entropy
+weighted by inverse class frequency (the metric is macro-F1).
+
+**Procedure.** Folds are B3's: `StratifiedGroupKFold(5)` on `sentence_group`, seeds
+`SEED+0..4`, and B3 is rescored on those five seeds so the comparison is paired.
+Hyperparameters are chosen **inside each training fold**: one sentence-grouped inner
+split (about 20%), four settings (learning rate 3e-5 or 5e-5 × 6 or 12 epochs), best
+inner macro-F1 wins, then a refit on the whole training fold. The held-out fold is never
+used for selection, and the chosen settings are saved. Scores are pooled out-of-fold
+macro-F1 per seed, averaged over seeds, with group-bootstrap intervals (2,000 draws)
+and paired differences from the same resamples, also on the rows whose text is not
+shared between sentences annotated for different APCs.
+
+**Fusion.** B3 and encoder probabilities are averaged at a fixed weight of 0.5 (0.25
+and 0.75 reported as post hoc sensitivity). The encoder's loss is class-weighted and
+B3's is not, so its posteriors are first multiplied by the training-fold class prior
+and renormalised. Fusion beating B3 with a paired interval that excludes 0 is the
+evidence that text adds to the inventory.
+
+**T3, causal ablation** (plain model, out-of-fold, so no checkpoint is kept): mask the
+participle, mask the main verb, mask the temporal adverbials, and move a final APC to the
+front (only when it has no internal comma and no quote or bracket is split). Each mask
+has a control that masks the same number of random words outside the APC group, the
+main verb and the adverbials, so "any masking hurts" is not read as an effect. The
+outputs are the change in the predicted distribution and in P(true reading), with
+group-bootstrap intervals, plus mask-minus-control and main-verb-minus-participle
+contrasts. The tense-swap probe the design called for (PP to Pres-Ind) is not built:
+it needs a Portuguese verb inflector.
+
+**Decision rules, fixed before the run.** The encoder "recovers the inventory's signal"
+only if its paired difference from B3 includes 0 or is positive. T3 is interpreted
+only if the tuned plain model reaches macro-F1 0.60; below that it is exploratory.
+
+**Limits.** The encoder is far smaller-data than its pre-training assumes (1,038
+sentences); inner selection uses ~165 validation rows and is noisy; the markers may
+shift a cased model by themselves (plain is the control); T3 is run on the plain model
+only; the main-verb subset is selective; the fold cache and tables come from a GPU run
+that is not bit-reproducible.
+
 ### `05_explain.py` — does a non-linear model agree?
 
 TreeSHAP [lundberg2017; lundberg2020] on the two ensembles, as a cross-check on
