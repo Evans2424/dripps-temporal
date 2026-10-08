@@ -1,5 +1,6 @@
 import re
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 
@@ -17,50 +18,70 @@ def _methods_section() -> str:
     return re.sub(r"\[([a-z][\w\-]*(?:; ?[a-z][\w\-]*)*)\]", r"[`\1`]", m.group(0)) if m else ""
 
 
+def _tuned() -> bool:
+    return (results.TABLES / "t1_encoder_config.csv").exists()
+
+
 def _status():
-    tuned = (results.TABLES / "t1_encoder_config.csv").exists()
-    if tuned:
-        st.success("The tuned GPU run is in this checkout; its tables are below.")
-        return True
-    st.warning("**Implemented, results pending.** The code (fine-tuning, verb markers, B3 fusion, text "
-               "perturbations) is complete and tested, but the tuned run on the GPU machine has not been "
-               "copied into this checkout (`make encoder`, then commit `results/tables/t1_*` and `t3_*`).")
-    st.markdown(
-        "**First run, superseded** (fixed settings: lr 2e-5, 4 epochs, whole sentence): macro-F1 "
-        "**0.469** [0.415, 0.528] against B3's **0.694** on the same folds; paired difference "
-        "-0.226 [-0.288, -0.162]. Ant F1 0.25 and a seed spread of 0.033 (B3: 0.002) show the model was "
-        "under-trained, not that the text carries less signal. The tuned run changes the optimisation "
-        "(settings chosen inside each training fold, class-weighted loss), marks the two verbs, and adds a "
-        "B3 + encoder fusion test.")
-    return False
+    if _tuned():
+        st.success("Tuned run: settings chosen inside each training fold, class-weighted loss, plain and "
+                   "verb-marked variants, B3 + encoder fusion.")
+        return
+    st.warning("**First run only (fixed settings), shown below.** The tuned run (settings chosen inside each "
+               "training fold, verb markers, B3 + encoder fusion) is implemented and tested, but its tables are "
+               "not in this checkout yet (`make encoder` on the GPU machine, then commit `results/tables/t1_*` "
+               "and `t3_*`).")
+    st.markdown("The first run used lr 2e-5 and 4 epochs on the whole sentence. Ant F1 is 0.25 and the seed spread "
+                "is 0.033 (B3: 0.002), which points to an under-trained model, not to less signal in the text. "
+                "Read it as a lower bound, and the T3 shifts as exploratory for the same reason.")
+
+
+def _t1_chart(t1):
+    d = t1[~t1["model"].str.contains("paired") & ~t1["model"].str.contains("text-unambiguous")]
+    base = alt.Chart(d).encode(y=alt.Y("model:N", title=None, sort=None))
+    st.altair_chart(base.mark_bar().encode(x=alt.X("macro_f1:Q", title="out-of-fold macro-F1", scale=alt.Scale(domain=[0, 0.8])))
+                    + base.mark_rule().encode(x="ci_lo:Q", x2="ci_hi:Q"), width="stretch")
+
+
+def _t3_chart(t3):
+    d = t3.dropna(subset=["d_P_true"])
+    base = alt.Chart(d).encode(y=alt.Y("perturbation:N", title=None, sort=None))
+    st.altair_chart(base.mark_bar().encode(x=alt.X("d_P_true:Q", title="change in P(true reading)"),
+                                           color=alt.condition("indexof(datum.perturbation, 'ctrl_') >= 0",
+                                                               alt.value("#9AA5AB"), alt.value("#4C4B9E")))
+                    + base.mark_rule().encode(x="d_P_true_lo:Q", x2="d_P_true_hi:Q"), width="stretch")
 
 
 def _results():
-    t1 = table("t1_encoder.csv")
+    sfx = "" if _tuned() else "_first_run"
+    t1 = table(f"t1_encoder{sfx}.csv")
     if t1 is not None:
         st.subheader("T1 · encoder against B3 (same folds, 5 seeds)")
+        _t1_chart(t1)
         full = t1[~t1["model"].str.contains("text-unambiguous")]
         st.dataframe(full.drop(columns="n").round(3), hide_index=True, width="stretch")
-        st.caption("Macro-F1 with 95% intervals from resampling sentence groups; the paired rows are differences from "
-                   "the same resamples. 'w' is the weight of the encoder in the B3 + encoder average (0.5 was fixed in "
-                   "advance; the others are post hoc).")
-    cfg = table("t1_encoder_config.csv")
+        st.caption("Macro-F1 with 95% intervals from resampling sentence groups; paired rows are differences from the "
+                   "same resamples. In the tuned table, 'w' is the weight of the encoder in the B3 + encoder average "
+                   "(0.5 was fixed in advance; the others are post hoc).")
+    cfg = table("t1_encoder_config.csv") if _tuned() else None
     if cfg is not None:
         st.subheader("Settings chosen inside the training folds")
         st.dataframe(cfg.groupby(["variant", "lr", "epochs"]).size().rename("folds").reset_index(),
                      hide_index=True, width="stretch")
         st.caption("If one corner of the grid wins every fold, the grid was too narrow.")
-    t3 = table("t3_ablation.csv")
+    t3 = table(f"t3_ablation{sfx}.csv")
     if t3 is not None:
-        st.subheader("T3 · change in the predicted reading when the text is perturbed")
+        st.subheader("T3 · masking experiments: change in the predicted reading")
+        _t3_chart(t3)
         st.dataframe(t3.round(4), hide_index=True, width="stretch")
-        st.caption("d_P_* is the mean change in predicted probability (plain model, out-of-fold). 'ctrl_*' masks the "
-                   "same number of random words; read a perturbation net of its control. Interpreted only if the "
-                   "tuned plain model reaches macro-F1 0.60.")
+        st.caption("d_P_* is the mean change in predicted probability when that part of the sentence is masked (or the "
+                   "participial clause moved to the front), out-of-fold, with 95% intervals over sentence groups. "
+                   "'ctrl_*' masks the same number of random words, so read a perturbation net of its control "
+                   "(grey bars). Interpreted only if the tuned plain model reaches macro-F1 0.60.")
     span = results.TABLES / "t3_span_sample.csv"
     if span.exists():
         s = pd.read_csv(span)
-        if s["participle_ok"].notna().any():
+        if "participle_ok" in s and s["participle_ok"].notna().any():
             st.caption(f"Hand check of span recovery on {len(s)} rows: participle correct in "
                        f"{int((s['participle_ok'] == 'y').sum())}, main verb correct in {int((s['main_verb_ok'] == 'y').sum())}.")
 
@@ -94,8 +115,8 @@ def render():
                "miss anything the text carries (T1) and which parts of the text it uses (T3).")
     t1, t2, t3 = st.tabs(["Status and results", "Architecture and procedure", "Span recovery demo"])
     with t1:
-        if _status():
-            _results()
+        _status()
+        _results()
     with t2:
         st.markdown(_methods_section())
     with t3:
