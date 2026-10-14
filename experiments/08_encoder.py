@@ -22,7 +22,6 @@ t3_ablation.csv and t3_span_sample.csv (50 rows to check span recovery by hand).
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import os
 import sys
@@ -31,7 +30,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.metrics import f1_score
-from sklearn.preprocessing import StandardScaler
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -139,21 +137,24 @@ def main() -> None:
     X = features.build(df).to_numpy()
     labels = sorted(pd.unique(y))
     n_seeds = 1 if smoke else N_SEEDS
-    smoke_cfg = [dict(lr=3e-5, epochs=1)]
-    grid = {False: smoke_cfg if smoke else encoder.CONFIGS, True: smoke_cfg if smoke else encoder.CONFIGS_FEAT}
-    configs = grid[False]
+    grid = lambda var: [dict(lr=3e-5, epochs=1)] if smoke else (  # noqa: E731
+        encoder.CONFIGS_FEAT if var.endswith("_feat") else encoder.CONFIGS)
 
     perturbed, span_df, marked, marks = build_variants(texts, mask)
     import transformers
-    # a cached fold is only valid for the exact inputs, settings and library versions that produced it
-    key = hashlib.sha1(json.dumps([texts, marked, perturbed, labels, encoder.CONFIGS, encoder.CONFIGS_FEAT, encoder.HPARAMS,
-                                   encoder.CHECKPOINT, SEED, transformers.__version__, X.round(6).tolist()]).encode()).hexdigest()[:10]
-    cache = ROOT / "results/cache_encoder" / key
-    cache.mkdir(parents=True, exist_ok=True)
-    cached = lambda var: all((cache / f"{var}_s{r}_f{k}.npz").exists()  # noqa: E731
+    # a cached fold is only valid for the exact inputs, settings and library versions that produced it;
+    # each variant is keyed on its own inputs, so adding or retuning one never discards another's folds
+    cache = {v: ROOT / "results/cache_encoder" / encoder.cache_key(
+        v, texts=texts, marked=marked, perturbed=perturbed, X=X, labels=labels, seed=SEED,
+        library=transformers.__version__) for v in ALL}
+    if not smoke:
+        for d in cache.values():
+            d.mkdir(parents=True, exist_ok=True)
+    cached = lambda var: all((cache[var] / f"s{r}_f{k}.npz").exists()  # noqa: E731
                              for r in range(n_seeds) for k in range(evaluate.N_SPLITS))
     used = [v for v in ALL if v in todo or (not smoke and cached(v))]
-    print(f"{len(df)} rows, {n_seeds} seeds, {len(configs)} configs, computing {todo}, tables from {used}", flush=True)
+    print(f"{len(df)} rows, {n_seeds} seeds, computing {todo} ({[len(grid(v)) for v in todo]} configs each), "
+          f"tables from {used}", flush=True)
     print({v: sum(t is not None for t in perturbed[v]) for v in VARIANTS},
           "| marks:", sum(m[0] is not None for m in marks), "participle,",
           sum(m[1] is not None for m in marks), "main verb", flush=True)
@@ -165,12 +166,14 @@ def main() -> None:
     chosen = []
     for r in range(n_seeds):
         for k, (train, test) in enumerate(evaluate.folds(y, g, SEED + r)):
-            b3p[r, test] = models.b3_logit().fit(X[train], y[train]).predict_proba(X[test])
+            b3 = models.b3_logit().fit(X[train], y[train])
+            b3p[r, test] = b3.predict_proba(X[test])
             prior = np.array([(y[train] == c).mean() for c in labels])
-            scaler = StandardScaler().fit(X[train])  # the same scaling B3 applies; training rows only
-            Xtr, Xte = scaler.transform(X[train]), scaler.transform(X[test])
+            # B3's own scaling, fitted on the training fold (the inner validation rows inside
+            # select_and_predict therefore help set the mean and std; unsupervised and small)
+            Xtr, Xte = b3["scale"].transform(X[train]), b3["scale"].transform(X[test])
             for var in used:
-                f = cache / f"{var}_s{r}_f{k}.npz"
+                f = cache[var] / f"s{r}_f{k}.npz"
                 if f.exists() and not smoke:
                     z = np.load(f)
                 else:
@@ -189,7 +192,7 @@ def main() -> None:
                         kw.update(train_feats=Xtr, eval_feats={"orig": Xte})
                     out, cfg = encoder.select_and_predict(
                         [src[i] for i in train], y[train], g[train], ev, labels=labels, seed=SEED + r,
-                        configs=grid[feat], **kw)
+                        configs=grid(var), **kw)
                     flat = {"orig": out["orig"], "cfg": np.array(json.dumps(cfg))}
                     if var == "plain":
                         for v in VARIANTS:

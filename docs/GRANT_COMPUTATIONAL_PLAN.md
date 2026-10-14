@@ -1,6 +1,6 @@
 ### 1. Experiments already performed
 
-The classical models (multinomial logit, random forest, XGBoost and a hierarchical varieties model) run on the 1,038 Portuguese clauses with 5-fold cross-validation over five seeds, in minutes on a laptop CPU. The encoder pipeline is implemented and tested on CPU, and a first fine-tuning run of XLM-R base on a lab GPU showed that tuning is needed (macro-F1 0.469 against 0.694 for the logit). Generative and decision-making models have not been run yet.
+The classical models (multinomial logit, random forest, XGBoost and a hierarchical varieties model) run on the 1,038 Portuguese clauses with sentence-grouped 5-fold cross-validation repeated over several random splits, in minutes on a laptop CPU. The encoder pipeline is implemented, its text perturbations are covered by automated tests, and its fine-tuning step has been run end to end in a CPU smoke test. A first fine-tuning run of XLM-R base on a lab GPU showed that tuning is needed (macro-F1 0.469 against 0.694 for the logit). Generative and decision-making models have not been run yet.
 
 ### 2. Phases and time management
 
@@ -18,12 +18,12 @@ Each job is one (model, variant, seed, fold) unit in an independent job array, s
 
 | Item | Estimated GPU hours |
 |---|---|
-| Encoders (XLM-R base and large, mDeBERTa, a Portuguese encoder; 4 configurations each) | 140 to 190 |
+| Encoders (XLM-R base and large, mDeBERTa, a Portuguese encoder; 4 configurations each) | 230 to 310 |
 | Generative models (4 to 5 open-weight models, 7B to 70B; prompts and perturbations) | 250 to 400 |
 | LoRA fine-tuning of 2 to 3 models | 80 to 120 |
 | Decision-making models (2 open reproductions) | 100 to 150 |
 | Pilot and development | 30 |
-| Total, with a 30% margin | about 1,000 |
+| Total, with a 30% margin | about 1,200 |
 
 The encoders fit on one GPU, and no job needs more than one node. The 70B model needs several GPUs or quantisation, and the pilot settles this. CPU use is small.
 

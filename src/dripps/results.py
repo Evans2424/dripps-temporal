@@ -33,9 +33,9 @@ PRODUCED_BY = {
     # the first, untuned GPU run (commit e9268bd); kept as a record, not rewritten by `make encoder`
     "t1_encoder_first_run.csv": "git show e9268bd (first untuned run; not reproducible)",
     "t3_ablation_first_run.csv": "git show e9268bd (first untuned run; not reproducible)",
-    "t1_encoder.csv": "make encoder",
-    "t1_encoder_preds.csv": "make encoder",
-    "t1_encoder_config.csv": "make encoder",
+    "t1_encoder.csv": "make encoder, then make encoder-feat",
+    "t1_encoder_preds.csv": "make encoder, then make encoder-feat",
+    "t1_encoder_config.csv": "make encoder, then make encoder-feat",
     "t3_ablation.csv": "make encoder",
     "t3_span_sample.csv": "make encoder",
     "shap_summary.csv": "make explain",

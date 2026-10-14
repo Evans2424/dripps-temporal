@@ -1,6 +1,6 @@
 ## Overview
 
-The project asks how well three families of models (fine-tuned encoders, generative language models and decision-making models) recover the temporal relation of Portuguese adverbial perfect participial clauses, and whether what they rely on agrees with linguistic theories of aspect and temporal interpretation. The relation is anteriority, posteriority or simultaneity between the clause (*tendo* plus a participle) and its main clause. Classical ML methods are already implemented and run on the annotated clauses of the DRIPPS corpus, nominately a multinomial logit, random forest and XGBoost, and a hierarchical varieties model for RQ2. They serve as baselines for the other models that we will experiment with.
+The project asks how well three families of models (fine-tuned encoders, generative language models and decision-making models) recover the temporal relation of Portuguese adverbial perfect participial clauses, and whether what they rely on agrees with linguistic theories of aspect and temporal interpretation. The relation is anteriority, posteriority or simultaneity between the clause (*tendo* plus a participle) and its main clause. Classical ML methods are already implemented and run on the annotated clauses of the DRIPPS corpus, namely a multinomial logit, random forest and XGBoost, and a hierarchical varieties model for RQ2. They serve as baselines for the other models that we will experiment with.
 
 ## Phase 1 (months 1 and 2): fine-tuned encoders
 

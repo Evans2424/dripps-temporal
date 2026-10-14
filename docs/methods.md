@@ -127,7 +127,7 @@ the 660 rows are those where the parser found a single finite root, a selected s
 `t3_span_sample.csv` holds 50 rows with both spans for a hand check of both columns.
 
 **Architecture.** `xlm-roberta-base` (12 layers, 768 dimensions, all weights
-fine-tuned) with a head of dropout (0.1) and one linear layer. Two variants:
+fine-tuned) with a head of dropout (0.1) and one linear layer. Four variants:
 
 - *plain*: the head sees the first-token vector.
 - *marked*: the text becomes `[[ tendo X ]]` around the APC group and `<< verb >>` around
@@ -139,13 +139,14 @@ fine-tuned) with a head of dropout (0.1) and one linear layer. Two variants:
 - *plain_feat* and *marked_feat*: the same two, with B3's annotated cues (the 17-column
   matrix of `features.build`: main-clause aspect and tense, clause position, connector,
   participial-clause aspect) concatenated to the text vector before the linear layer. The
-  columns are standardised on the training fold, as B3 does. The layer is written as
+  columns are standardised on the training fold with B3's own scaler. The layer is written as
   two whose logits add, so the cue weights (initialised at zero) get their own learning
-  rate instead of the encoder's 3e-5 to 5e-5, which would barely move them in about
-  600 steps. That rate is tuned, not fixed: too low ignores the cues and the model
+  rate instead of the encoder's 3e-5 to 5e-5, which would barely move them in a few
+  hundred steps (about 300 to 600 per refit, depending on the epochs). That rate is tuned, not fixed: too low ignores the cues and the model
   collapses to the text-only encoder, too high lets them drown the text and it collapses
-  to the logit. The grid for these two variants is feat_lr 1e-4, 1e-3 or 1e-2 × 6 or 12
-  epochs, at encoder rate 5e-5 (six settings, not a full cross, to bound the cost); the
+  to the logit. The grid for these two variants is the text-only grid crossed with feat_lr 1e-4,
+  1e-3 or 1e-2 (12 settings), so a feature variant and its text-only twin differ in the
+  cues and not in tuning budget; the
   chosen rate is saved per fold in `t1_encoder_config.csv`, and rates pinned at an edge of
   the grid are reported as such. Comparing `*_feat` with the text-only variant asks whether the
   encoder gains from the cues; comparing it with B3 asks whether the text adds to them.

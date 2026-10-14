@@ -128,6 +128,43 @@ def test_features_follow_their_rows_through_selection():
     assert len(seen) == 2
 
 
+def test_cache_keys_are_per_variant(monkeypatch):
+    from dripps import encoder
+
+    kw = dict(texts=["a", "b"], marked=["[[a]]", "b"], perturbed={"mask": ["x", None]}, X=np.zeros((2, 3)),
+              labels=["Ant", "Post"], seed=1, library="1")
+    before = {v: encoder.cache_key(v, **kw) for v in ("plain", "marked", "plain_feat", "marked_feat")}
+    monkeypatch.setattr(encoder, "CONFIGS_FEAT", encoder.CONFIGS_FEAT[:3])
+    monkeypatch.setitem(encoder.HPARAMS, "feat_lr", 5e-3)
+    after = {v: encoder.cache_key(v, **{**kw, "X": np.ones((2, 3))}) for v in before}
+    assert after["plain"] == before["plain"] and after["marked"] == before["marked"]  # text-only folds survive
+    assert after["plain_feat"] != before["plain_feat"] and after["marked_feat"] != before["marked_feat"]
+    assert len(set(before.values())) == 4
+
+
+def test_fit_predict_with_features_runs_and_checks_its_inputs():
+    import pytest
+    pytest.importorskip("torch")
+    pytest.importorskip("transformers")
+    from dripps import encoder
+
+    labels = ["Ant", "Post", "Simul"]
+    texts = [f"ele saiu, tendo feito {w}." for w in "abcdefgh"]
+    y = np.array(labels * 3)[:8]
+    feats = np.random.default_rng(0).normal(size=(8, 4))
+    try:
+        p = encoder.fit_predict(texts, y, {"orig": texts[:3]}, labels=labels, seed=0, lr=5e-5, epochs=1,
+                                train_feats=feats, eval_feats={"orig": feats[:3]}, feat_lr=1e-2,
+                                checkpoint="hf-internal-testing/tiny-xlm-roberta", batch_size=4)
+    except OSError:
+        pytest.skip("tiny checkpoint not available offline")
+    assert p["orig"].shape == (3, 3) and np.allclose(p["orig"].sum(1), 1)
+    with pytest.raises(AssertionError):  # a feature variant must score every eval set with features
+        encoder.fit_predict(texts, y, {"orig": texts[:3], "other": texts[:2]}, labels=labels, seed=0, lr=5e-5,
+                            epochs=1, train_feats=feats, eval_feats={"orig": feats[:3]},
+                            checkpoint="hf-internal-testing/tiny-xlm-roberta", batch_size=4)
+
+
 def test_methods_doc_names_the_tagger_the_script_loads():
     root = Path(__file__).resolve().parents[1]
     model = "pt_core_news_sm"

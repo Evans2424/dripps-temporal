@@ -19,8 +19,23 @@ CONFIGS = [dict(lr=lr, epochs=ep) for lr in (3e-5, 5e-5) for ep in (6, 12)]
 # their own, larger rate (the encoder keeps lr). The default is only a fallback: the feature variants
 # tune it (CONFIGS_FEAT), because too low ignores the cues and too high lets them drown the text.
 HPARAMS = dict(batch_size=16, max_len=256, warmup=0.1, feat_lr=1e-3)
-# 6 settings, not the 12 of a full cross: the encoder rate is fixed at 5e-5 to keep the cost near 1.5x
-CONFIGS_FEAT = [dict(lr=5e-5, epochs=ep, feat_lr=fl) for ep in (6, 12) for fl in (1e-4, 1e-3, 1e-2)]
+# the text-only grid crossed with the feature rate, so a feature variant and its text-only twin differ
+# in the cues and not in tuning budget
+CONFIGS_FEAT = [dict(**c, feat_lr=fl) for c in CONFIGS for fl in (1e-4, 1e-3, 1e-2)]
+
+
+def cache_key(var, *, texts, marked, perturbed, X, labels, seed, library):
+    """Cache directory name for one variant. Each variant is keyed on its own inputs only, so changing
+    the feature grid or the cue matrix never orphans the cached plain and marked folds."""
+    import hashlib
+    import json
+    feat = var.endswith("_feat")
+    hp = {k: v for k, v in HPARAMS.items() if feat or k != "feat_lr"}
+    parts = [var, labels, CONFIGS_FEAT if feat else CONFIGS, hp, CHECKPOINT, seed, library]
+    parts += [texts, perturbed] if var == "plain" else [marked] if var.startswith("marked") else [texts]
+    if feat:
+        parts.append(np.asarray(X).round(6).tolist())
+    return f"{var}_" + hashlib.sha1(json.dumps(parts).encode()).hexdigest()[:10]
 
 
 def fit_predict(train_texts, y_train, eval_texts: dict, *, labels, seed, lr, epochs,
@@ -51,15 +66,21 @@ def fit_predict(train_texts, y_train, eval_texts: dict, *, labels, seed, lr, epo
                                torch.nn.Linear(enc.config.hidden_size * (1 + n_marks), len(labels))).to(dev)
     n_feat = 0 if train_feats is None else train_feats.shape[1]
     assert not n_feat or eval_feats is not None, "trained with features but no eval features"
-    feat_head = torch.nn.Linear(max(n_feat, 1), len(labels), bias=False).to(dev)
-    torch.nn.init.zeros_(feat_head.weight)
+    assert not n_feat or set(eval_feats) == set(eval_texts), "eval_feats needs one array per eval text set"
+    feat_head = None
+    if n_feat:
+        feat_head = torch.nn.Linear(n_feat, len(labels), bias=False).to(dev)
+        torch.nn.init.zeros_(feat_head.weight)
     y = torch.tensor([labels.index(v) for v in y_train])
     counts = torch.bincount(y, minlength=len(labels)).float()
     loss_fn = torch.nn.CrossEntropyLoss(weight=(len(y) / (len(labels) * counts.clamp(min=1))).to(dev))
     n, bs = len(y), hp["batch_size"]
     steps = epochs * ((n + bs - 1) // bs)
     params = list(enc.parameters()) + list(head.parameters())
-    groups = [dict(params=params, lr=lr)] + ([dict(params=list(feat_head.parameters()), lr=hp["feat_lr"])] if n_feat else [])
+    groups = [dict(params=params, lr=lr)]
+    if n_feat:
+        groups.append(dict(params=list(feat_head.parameters()), lr=hp["feat_lr"]))
+        params = params + list(feat_head.parameters())  # clipped with the rest
     opt = torch.optim.AdamW(groups, weight_decay=0.01)
     sched = get_linear_schedule_with_warmup(opt, int(hp["warmup"] * steps), steps)
 

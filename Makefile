@@ -1,6 +1,6 @@
 PY := .venv/bin/python
 
-.PHONY: all ingest test audit baselines hierarchy varieties hierarchical encoder explain viewer app clean
+.PHONY: all ingest test audit baselines hierarchy varieties hierarchical encoder encoder-feat explain viewer app clean
 
 all: ingest test audit baselines hierarchy varieties hierarchical explain viewer
 

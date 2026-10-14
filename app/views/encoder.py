@@ -24,8 +24,9 @@ def _tuned() -> bool:
 
 def _status():
     if _tuned():
-        st.success("Tuned run: settings chosen inside each training fold, class-weighted loss, plain and "
-                   "verb-marked variants, B3 + encoder fusion.")
+        st.success("Tuned run: settings chosen inside each training fold, class-weighted loss, text-only and "
+                   "verb-marked variants (each also with the annotated cues concatenated, where run), "
+                   "B3 + encoder fusion.")
         return
     st.warning("**First run only (fixed settings), shown below.** The tuned run (settings chosen inside each "
                "training fold, verb markers, B3 + encoder fusion) is implemented and tested, but its tables are "
@@ -66,9 +67,19 @@ def _results():
     cfg = table("t1_encoder_config.csv") if _tuned() else None
     if cfg is not None:
         st.subheader("Settings chosen inside the training folds")
-        st.dataframe(cfg.groupby(["variant", "lr", "epochs"]).size().rename("folds").reset_index(),
+        keys = [c for c in ("variant", "lr", "epochs", "feat_lr") if c in cfg]
+        st.dataframe(cfg.groupby(keys, dropna=False).size().rename("folds").reset_index(),
                      hide_index=True, width="stretch")
-        st.caption("If one corner of the grid wins every fold, the grid was too narrow.")
+        st.caption("If one corner of the grid wins every fold, the grid was too narrow. feat_lr is the learning "
+                   "rate of the annotated-cue weights in the `_feat` variants.")
+        if "feat_lr" in cfg and cfg.feat_lr.notna().any():
+            f = cfg.dropna(subset=["feat_lr"])
+            for v, d in f.groupby("variant"):
+                top = (d.feat_lr == f.feat_lr.max()).mean()
+                low = (d.feat_lr == f.feat_lr.min()).mean()
+                if max(top, low) > .5:
+                    st.warning(f"{v}: the feature rate sits at the {'top' if top > low else 'bottom'} of the grid "
+                               f"in {max(top, low):.0%} of folds; the grid was probably too narrow.")
     t3 = table(f"t3_ablation{sfx}.csv")
     if t3 is not None:
         st.subheader("T3 · masking experiments: change in the predicted reading")
