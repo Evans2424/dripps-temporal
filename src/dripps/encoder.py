@@ -15,9 +15,12 @@ from . import evaluate
 
 CHECKPOINT = "xlm-roberta-base"
 CONFIGS = [dict(lr=lr, epochs=ep) for lr in (3e-5, 5e-5) for ep in (6, 12)]
-# feat_lr: the annotated-feature weights start from zero and have only ~600 steps to move, so
-# they get their own, larger rate (the encoder keeps lr)
+# feat_lr: the annotated-feature weights start from zero and have only ~600 steps to move, so they get
+# their own, larger rate (the encoder keeps lr). The default is only a fallback: the feature variants
+# tune it (CONFIGS_FEAT), because too low ignores the cues and too high lets them drown the text.
 HPARAMS = dict(batch_size=16, max_len=256, warmup=0.1, feat_lr=1e-3)
+# 6 settings, not the 12 of a full cross: the encoder rate is fixed at 5e-5 to keep the cost near 1.5x
+CONFIGS_FEAT = [dict(lr=5e-5, epochs=ep, feat_lr=fl) for ep in (6, 12) for fl in (1e-4, 1e-3, 1e-2)]
 
 
 def fit_predict(train_texts, y_train, eval_texts: dict, *, labels, seed, lr, epochs,

@@ -139,12 +139,14 @@ def main() -> None:
     X = features.build(df).to_numpy()
     labels = sorted(pd.unique(y))
     n_seeds = 1 if smoke else N_SEEDS
-    configs = [dict(lr=3e-5, epochs=1)] if smoke else encoder.CONFIGS
+    smoke_cfg = [dict(lr=3e-5, epochs=1)]
+    grid = {False: smoke_cfg if smoke else encoder.CONFIGS, True: smoke_cfg if smoke else encoder.CONFIGS_FEAT}
+    configs = grid[False]
 
     perturbed, span_df, marked, marks = build_variants(texts, mask)
     import transformers
     # a cached fold is only valid for the exact inputs, settings and library versions that produced it
-    key = hashlib.sha1(json.dumps([texts, marked, perturbed, labels, encoder.CONFIGS, encoder.HPARAMS,
+    key = hashlib.sha1(json.dumps([texts, marked, perturbed, labels, encoder.CONFIGS, encoder.CONFIGS_FEAT, encoder.HPARAMS,
                                    encoder.CHECKPOINT, SEED, transformers.__version__, X.round(6).tolist()]).encode()).hexdigest()[:10]
     cache = ROOT / "results/cache_encoder" / key
     cache.mkdir(parents=True, exist_ok=True)
@@ -187,7 +189,7 @@ def main() -> None:
                         kw.update(train_feats=Xtr, eval_feats={"orig": Xte})
                     out, cfg = encoder.select_and_predict(
                         [src[i] for i in train], y[train], g[train], ev, labels=labels, seed=SEED + r,
-                        configs=configs, **kw)
+                        configs=grid[feat], **kw)
                     flat = {"orig": out["orig"], "cfg": np.array(json.dumps(cfg))}
                     if var == "plain":
                         for v in VARIANTS:

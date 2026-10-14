@@ -141,8 +141,13 @@ fine-tuned) with a head of dropout (0.1) and one linear layer. Two variants:
   participial-clause aspect) concatenated to the text vector before the linear layer. The
   columns are standardised on the training fold, as B3 does. The layer is written as
   two whose logits add, so the cue weights (initialised at zero) get their own learning
-  rate, 1e-3, instead of the encoder's 3e-5 to 5e-5, which would barely move them in
-  about 600 steps. Comparing `*_feat` with the text-only variant asks whether the
+  rate instead of the encoder's 3e-5 to 5e-5, which would barely move them in about
+  600 steps. That rate is tuned, not fixed: too low ignores the cues and the model
+  collapses to the text-only encoder, too high lets them drown the text and it collapses
+  to the logit. The grid for these two variants is feat_lr 1e-4, 1e-3 or 1e-2 × 6 or 12
+  epochs, at encoder rate 5e-5 (six settings, not a full cross, to bound the cost); the
+  chosen rate is saved per fold in `t1_encoder_config.csv`, and rates pinned at an edge of
+  the grid are reported as such. Comparing `*_feat` with the text-only variant asks whether the
   encoder gains from the cues; comparing it with B3 asks whether the text adds to them.
   They are not averaged with B3, since they already see the cues. T3 runs on the plain
   text model only.
