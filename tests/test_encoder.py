@@ -82,7 +82,8 @@ def test_select_and_predict_tunes_only_on_the_training_rows():
     train, test = next(iter(evaluate.folds(y, g, 3)))
     calls = []
 
-    def fake_fit(tr_texts, y_tr, ev, *, labels, seed, lr, epochs, train_marks=None, eval_marks=None):
+    def fake_fit(tr_texts, y_tr, ev, *, labels, seed, lr, epochs, train_marks=None, eval_marks=None,
+                 train_feats=None, eval_feats=None):
         calls.append((set(tr_texts), set(next(iter(ev.values()))), lr))
         out = {}
         for k, ts in ev.items():  # lr 5e-5 "learns" (returns the true label); 3e-5 always says Ant
@@ -101,6 +102,30 @@ def test_select_and_predict_tunes_only_on_the_training_rows():
     assert not calls[0][0] & calls[0][1]                                 # inner fit/validation rows are disjoint
     assert not {g[int(t)] for t in calls[0][0]} & {g[int(t)] for t in calls[0][1]}  # and so are their groups
     assert cfg["lr"] == 5e-5 and len(calls) == 3 and probs["orig"].shape == (len(test), 3)
+
+
+def test_features_follow_their_rows_through_selection():
+    from dripps import encoder
+
+    labels = ["Ant", "Post", "Simul"]
+    y = np.array(labels * 40)
+    g = np.arange(120) // 2
+    texts = [str(i) for i in range(120)]
+    feats = np.arange(120, dtype=float)[:, None]  # a feature that is the row index
+    train, test = next(iter(evaluate.folds(y, g, 3)))
+    seen = []
+
+    def fake_fit(tr_texts, y_tr, ev, *, labels, seed, lr, epochs, train_marks=None, eval_marks=None,
+                 train_feats=None, eval_feats=None):
+        seen.append((tr_texts, train_feats, next(iter(ev.values())), next(iter(eval_feats.values()))))
+        return {k: np.full((len(t), 3), 1 / 3) for k, t in ev.items()}
+
+    encoder.select_and_predict([texts[i] for i in train], y[train], g[train], {"orig": [texts[i] for i in test]},
+                               labels=labels, seed=3, configs=[dict(lr=3e-5, epochs=1)], fit=fake_fit,
+                               train_feats=feats[train], eval_feats={"orig": feats[test]})
+    assert all([int(t) for t in tr] == f[:, 0].tolist() and [int(t) for t in ev] == ef[:, 0].tolist()
+               for tr, f, ev, ef in seen)  # inner fit, inner validation and the final refit all stay aligned
+    assert len(seen) == 2
 
 
 def test_methods_doc_names_the_tagger_the_script_loads():

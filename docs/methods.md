@@ -136,6 +136,16 @@ fine-tuned) with a head of dropout (0.1) and one linear layer. Two variants:
   vector plus the vectors of the first sub-word of the participle and of the main verb,
   located through the tokenizer's character offsets. A missing span falls back to the
   first-token vector.
+- *plain_feat* and *marked_feat*: the same two, with B3's annotated cues (the 17-column
+  matrix of `features.build`: main-clause aspect and tense, clause position, connector,
+  participial-clause aspect) concatenated to the text vector before the linear layer. The
+  columns are standardised on the training fold, as B3 does. The layer is written as
+  two whose logits add, so the cue weights (initialised at zero) get their own learning
+  rate, 1e-3, instead of the encoder's 3e-5 to 5e-5, which would barely move them in
+  about 600 steps. Comparing `*_feat` with the text-only variant asks whether the
+  encoder gains from the cues; comparing it with B3 asks whether the text adds to them.
+  They are not averaged with B3, since they already see the cues. T3 runs on the plain
+  text model only.
 
 Training: AdamW (weight decay 0.01), linear schedule with 10% warm-up, batch 16,
 maximum length 256, gradient clipping at 1, bf16 autocast on GPU, cross-entropy

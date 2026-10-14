@@ -1,4 +1,5 @@
-"""T1 + T3: tuned xlm-roberta-base on the sentence, plain and with the two verbs marked.
+"""T1 + T3: tuned xlm-roberta-base on the sentence, plain and with the two verbs marked, each also
+with the annotated cues (B3's feature matrix) concatenated to the text vector (``*_feat``).
 
 Needs a GPU and requirements-neural.txt (run on the lab machine, copy the tables back).
 Hyperparameters are chosen inside each training fold (encoder.select_and_predict), folds are
@@ -12,8 +13,9 @@ training-fold class prior (and renormalised) before they are averaged.
 Writes results/tables/t1_encoder.csv, t1_encoder_preds.csv, t1_encoder_config.csv,
 t3_ablation.csv and t3_span_sample.csv (50 rows to check span recovery by hand).
 
-  --variant plain|marked|both   which variants to compute; tables always use every variant that is
-                                fully cached, so run each variant, then any run rewrites both
+  --variant V                   plain, marked, plain_feat, marked_feat, both (plain + marked, the
+                                default) or all four; tables always use every variant that is fully
+                                cached, so run each variant, then any run rewrites the tables
   --smoke                       100 rows, one seed, one config, one epoch, writes nothing
 """
 
@@ -29,6 +31,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.metrics import f1_score
+from sklearn.preprocessing import StandardScaler
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -36,6 +39,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from dripps import ablate, encoder, evaluate, features, io, models  # noqa: E402
 from dripps.schema import SEED  # noqa: E402
 
+ALL = ["plain", "marked", "plain_feat", "marked_feat"]
 N_SEEDS = 5  # the plan's minimum; B3 is rescored on the same seeds
 VARIANTS = ["mask_participle", "mask_main_verb", "mask_adverbials", "move_apc_initial",
             "ctrl_participle", "ctrl_main_verb", "ctrl_adverbials"]
@@ -115,10 +119,10 @@ def summarise(name, p, y, g, labels, m):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--smoke", action="store_true")
-    ap.add_argument("--variant", choices=["plain", "marked", "both"], default="both")
+    ap.add_argument("--variant", choices=[*ALL, "both", "all"], default="both")
     args = ap.parse_args()
     smoke = args.smoke
-    todo = ["plain", "marked"] if args.variant == "both" else [args.variant]
+    todo = {"both": ALL[:2], "all": ALL}.get(args.variant, [args.variant])
 
     import torch
     if not smoke and not torch.cuda.is_available():
@@ -141,12 +145,12 @@ def main() -> None:
     import transformers
     # a cached fold is only valid for the exact inputs, settings and library versions that produced it
     key = hashlib.sha1(json.dumps([texts, marked, perturbed, labels, encoder.CONFIGS, encoder.HPARAMS,
-                                   encoder.CHECKPOINT, SEED, transformers.__version__]).encode()).hexdigest()[:10]
+                                   encoder.CHECKPOINT, SEED, transformers.__version__, X.round(6).tolist()]).encode()).hexdigest()[:10]
     cache = ROOT / "results/cache_encoder" / key
     cache.mkdir(parents=True, exist_ok=True)
     cached = lambda var: all((cache / f"{var}_s{r}_f{k}.npz").exists()  # noqa: E731
                              for r in range(n_seeds) for k in range(evaluate.N_SPLITS))
-    used = [v for v in ("plain", "marked") if v in todo or (not smoke and cached(v))]
+    used = [v for v in ALL if v in todo or (not smoke and cached(v))]
     print(f"{len(df)} rows, {n_seeds} seeds, {len(configs)} configs, computing {todo}, tables from {used}", flush=True)
     print({v: sum(t is not None for t in perturbed[v]) for v in VARIANTS},
           "| marks:", sum(m[0] is not None for m in marks), "participle,",
@@ -161,20 +165,26 @@ def main() -> None:
         for k, (train, test) in enumerate(evaluate.folds(y, g, SEED + r)):
             b3p[r, test] = models.b3_logit().fit(X[train], y[train]).predict_proba(X[test])
             prior = np.array([(y[train] == c).mean() for c in labels])
+            scaler = StandardScaler().fit(X[train])  # the same scaling B3 applies; training rows only
+            Xtr, Xte = scaler.transform(X[train]), scaler.transform(X[test])
             for var in used:
                 f = cache / f"{var}_s{r}_f{k}.npz"
                 if f.exists() and not smoke:
                     z = np.load(f)
                 else:
+                    base, feat = var.removesuffix("_feat"), var.endswith("_feat")
+                    src = texts if base == "plain" else marked
                     if var == "plain":
                         where = {v: [i for i in test if perturbed[v][i] is not None] for v in VARIANTS}
                         ev = {"orig": [texts[i] for i in test],
                               **{v: [perturbed[v][i] for i in where[v]] for v in VARIANTS}}
-                        kw = {}
                     else:
-                        ev, kw = {"orig": [marked[i] for i in test]}, dict(
-                            train_marks=[marks[i] for i in train], eval_marks={"orig": [marks[i] for i in test]})
-                    src = texts if var == "plain" else marked
+                        ev = {"orig": [src[i] for i in test]}
+                    kw = {}
+                    if base == "marked":
+                        kw.update(train_marks=[marks[i] for i in train], eval_marks={"orig": [marks[i] for i in test]})
+                    if feat:
+                        kw.update(train_feats=Xtr, eval_feats={"orig": Xte})
                     out, cfg = encoder.select_and_predict(
                         [src[i] for i in train], y[train], g[train], ev, labels=labels, seed=SEED + r,
                         configs=configs, **kw)
@@ -203,12 +213,15 @@ def main() -> None:
     guess = {"B3 logit": lab[b3p.argmax(-1)]}
     for var in used:
         guess[f"encoder {var}"] = lab[probs[var].argmax(-1)]
+        if var.endswith("_feat"):  # already sees the cues; averaging with B3 would count them twice
+            continue
         for w in (0.5, 0.25, 0.75):  # 0.5 is the pre-set headline; the others are post hoc sensitivity
             tag = "" if w == 0.5 else " (post hoc)"
             guess[f"B3 + encoder {var}, w={w}{tag}"] = lab[((1 - w) * b3p + w * adj[var]).argmax(-1)]
     pairs = [(m, "B3 logit") for m in guess if m != "B3 logit"]
-    if len(used) == 2:
+    if "plain" in used and "marked" in used:
         pairs.append(("encoder marked", "encoder plain"))
+    pairs += [(f"encoder {b}_feat", f"encoder {b}") for b in ("plain", "marked") if b in used and f"{b}_feat" in used]
     # Sentences annotated for several APCs appear as identical text with different labels. A text-only
     # model cannot separate them (B3's per-clause features can), so score the other rows on their own.
     amb = (df.groupby("sentence_norm")[features.target(df).name].transform("nunique") > 1).to_numpy()

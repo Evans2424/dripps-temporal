@@ -31,6 +31,10 @@ hierarchical:
 encoder:
 	$(PY) experiments/08_encoder.py
 
+encoder-feat:  # text + annotated cues; run after `make encoder`, tables then cover all four variants
+	$(PY) experiments/08_encoder.py --variant plain_feat
+	$(PY) experiments/08_encoder.py --variant marked_feat
+
 explain:
 	$(PY) experiments/05_explain.py
 
