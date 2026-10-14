@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -117,6 +118,8 @@ def summarise(name, p, y, g, labels, m):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--smoke", action="store_true")
+    ap.add_argument("--adopt", type=Path, help="old single-directory cache whose plain and marked folds to "
+                    "copy into the per-variant caches (runs made before the per-variant cache keys)")
     ap.add_argument("--variant", choices=[*ALL, "both", "all"], default="both")
     args = ap.parse_args()
     smoke = args.smoke
@@ -150,6 +153,14 @@ def main() -> None:
     if not smoke:
         for d in cache.values():
             d.mkdir(parents=True, exist_ok=True)
+    for var in ("plain", "marked") if args.adopt and not smoke else ():
+        n = 0
+        for f in args.adopt.glob(f"{var}_s*_f*.npz"):
+            dst = cache[var] / f.name.removeprefix(f"{var}_")
+            if not dst.exists():
+                shutil.copy(f, dst)
+                n += 1
+        print(f"adopted {n} {var} folds from {args.adopt}", flush=True)
     cached = lambda var: all((cache[var] / f"s{r}_f{k}.npz").exists()  # noqa: E731
                              for r in range(n_seeds) for k in range(evaluate.N_SPLITS))
     used = [v for v in ALL if v in todo or (not smoke and cached(v))]
