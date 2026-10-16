@@ -371,7 +371,7 @@ def test_adjusted_class_probabilities_are_distributions_and_move_only_aspect(df)
 
 @pytest.mark.parametrize("page", [
     "overview", "corpus_explorer", "exploration", "models_page", "logit", "tree",
-    "hierarchy", "aspect", "shap_page", "varieties", "errors", "methods",
+    "hierarchy", "aspect", "shap_page", "varieties", "encoder", "errors", "methods",
 ])
 def test_app_page_renders_without_exception(page):
     testing = pytest.importorskip("streamlit.testing.v1")

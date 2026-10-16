@@ -12,3 +12,5 @@ data/processed/*
 # The per-row SHAP matrices (results/tables/shap_*.csv, ~1.8 MB each) ARE tracked:
 # the deployed app reads them and cannot run `make explain` itself.
 results/viewer.html
+.claude 
+results/cache_encoder/

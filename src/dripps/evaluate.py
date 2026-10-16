@@ -38,6 +38,12 @@ def macro_f1(y_true, y_pred, labels) -> float:
     )
 
 
+def folds(y, groups, seed, n_splits=N_SPLITS):
+    """The train/test indices ``cv_predict`` uses for one repeat; shared so a text model gets the same folds."""
+    cv = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=seed)
+    return cv.split(np.zeros(len(y)), y, groups)
+
+
 def cv_predict(model, X, y, groups, *, n_splits=N_SPLITS, n_repeats=N_REPEATS, seed=SEED):
     """Out-of-fold predictions for each repeat. Returns (n_repeats, n_samples)."""
     Xv = X.to_numpy() if hasattr(X, "to_numpy") else np.asarray(X)
@@ -45,8 +51,7 @@ def cv_predict(model, X, y, groups, *, n_splits=N_SPLITS, n_repeats=N_REPEATS, s
     groups = np.asarray(groups)
     preds = np.empty((n_repeats, len(y)), dtype=object)
     for r in range(n_repeats):
-        cv = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=seed + r)
-        for train, test in cv.split(Xv, y, groups):
+        for train, test in folds(y, groups, seed + r, n_splits):
             est = clone(model).fit(Xv[train], y[train])
             preds[r, test] = est.predict(Xv[test])
     return preds

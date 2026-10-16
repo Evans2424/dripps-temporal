@@ -643,9 +643,9 @@ of magnitude larger. Compare rankings within a model, never magnitudes across.
 
 ---
 
-## 7. The encoder models (not yet built)
+## 7. The encoder models (T1 and T3 built, results pending; T2 and T4 not built)
 
-`src/dripps/neural/` is empty. This section is the design, so the linguistic
+The code is `src/dripps/encoder.py`, `ablate.py` and `experiments/08_encoder.py`; the PP-to-Pres-Ind swap probe was dropped (it needs a Portuguese verb inflector). This section is the design, so the linguistic
 reasoning is on record before any training run.
 
 **What changes when a model reads the sentence.** The feature models see 17

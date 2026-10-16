@@ -1,0 +1,7 @@
+# GPU step only (make encoder); keep out of app/requirements.txt.
+# The base pins run on Python 3.10-3.13 (full test suite checked on 3.10 and 3.13).
+-r requirements.txt
+torch
+transformers>=5
+spacy>=3.7
+# python -m spacy download pt_core_news_sm

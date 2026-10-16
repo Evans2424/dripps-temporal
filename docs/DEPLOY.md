@@ -13,7 +13,7 @@ so everything the app reads must be committed:
 | the app reads | where it comes from |
 |---|---|
 | the corpus | `data/raw/dripps_full.csv`, `dripps_violeta.csv`, `dripps_abergaria.csv` |
-| every results table | `results/tables/*.csv`, produced by `make all` and committed |
+| every results table | `results/tables/*.csv`, produced by `make all` (the T1/T3 encoder tables by `make encoder` on a GPU) and committed |
 | per-sentence SHAP values | `results/tables/shap_forest.csv`, `shap_xgboost.csv` (about 1.8 MB each, tracked on purpose) |
 | the fitted models | refitted on first use and cached; nothing is stored |
 | the references | `docs/references.bib` |
@@ -32,8 +32,9 @@ so the app shows the numbers the pipeline produced.
 3. Fill in the form:
    - Repository and branch: the ones you pushed.
    - Main file path: `app/streamlit_app.py`
-   - **Advanced settings → Python version: 3.13.** The default is 3.12, the pins
-     were tested on 3.13, and the version cannot be set from the repository.
+   - **Advanced settings → Python version: 3.13** (or any of 3.10-3.13). The default
+     is 3.12; the pins were tested on 3.10 and 3.13 (full suite), and the version
+     cannot be set from the repository.
 4. **Deploy.** The first build takes a few minutes while the packages install.
 
 ## Who can see it
