@@ -153,37 +153,27 @@ experiment; the rest are exploratory, see below):
   encoder gains from the cues; comparing it with B3 asks whether the text adds to them.
   They are not averaged with B3, since they already see the cues. T3 runs on the plain
   text model only.
-- *plain_res*, *marked_res* (residual on B3): the text head learns a correction to B3's
-  log-odds, which are added to its logits, and it starts at zero, so the model begins as B3
-  and the text must earn any change (a product of experts, [clark-etal-2019-dont]). The
-  offset for a training row comes from a B3 fitted without that row's sentence group
-  (inner 5-fold), minus the log of the training-fold class prior so that
-  it matches the class-weighted loss; for the held-out fold it is the fold's own B3. It
-  needs no feature learning rate, so the grid is the text-only one. Not averaged with B3. (Inner-fit rows get offsets from B3 fits that
-  include the inner-validation rows, so the inner score that picks lr and epochs is slightly optimistic;
-  B3 has 17 inputs, so the effect is small.)
-- *plain_txt*, *marked_txt* (cues as words): the five annotated cues are written in front
-  of the sentence (`aspeto principal: ...; tempo: ...; aspeto subordinada: ...; posição:
-  ...; conector: ...`, with the cue codes rewritten as the Moens and Steedman primitives and the TAM
-  bundle in words, because the corpus codes such as `PIMP-Conj` are meaningless to a pretrained
-  model), and the marks of the marked variant move by the prefix length.
-  This lets the pretrained model read the cues in language it has seen, with no new
-  weights. Not averaged with B3.
-- *plain_aux*, *marked_aux* (auxiliary cue prediction): the text vector also feeds one
-  small head per cue (main-clause aspect, subordinate aspect, tense, position, connector),
-  trained with a cross-entropy of weight 0.5 in total, missing cues ignored. The cues
-  shape the encoder during training and are not an input, so at test time the model sees
-  text only and can still be fused with B3.
+- *plain_res*, *marked_res*: the text head learns a correction to B3's log-odds
+  (a product of experts, [clark-etal-2019-dont]) and starts at zero, so the model begins as B3.
+  Training rows get offsets from a B3 fitted without their sentence group, minus the log class
+  prior to match the class-weighted loss; the held-out fold gets its own B3. The inner score that
+  picks lr and epochs is slightly optimistic, because inner-fit offsets come from B3 fits that
+  saw the inner-validation rows (B3 has 17 inputs, so the effect is small).
+- *plain_txt*, *marked_txt*: the cues are written as words in front of the sentence
+  (`aspeto da oração principal: dinâmico, pontual, télico; tempo: ...`), from the Moens and
+  Steedman primitives and the TAM bundle, since codes such as `PIMP-Conj` mean nothing to a
+  pretrained model. The marks move by the prefix length.
+- *plain_aux*, *marked_aux*: the text vector also feeds one small head per cue (both aspects,
+  tense, position, connector), with a loss of weight 0.5 in total. The cues are not an input,
+  so at test time the model sees text only and can still be fused with B3.
 
-Any variant can run on another checkpoint (`--checkpoint`): `bertimbau` and
-`bertimbau-large` (BERTimbau, Portuguese BERT), `albertina` and `albertina-900m`
-(Albertina PT-PT, DeBERTa-based, trained on European Portuguese, the largest variety
-here), `mdeberta`, and `xlmr-large`. A variant on a non-default checkpoint is named like
-`marked@bertimbau` in the tables, and the paired differences include each one against
-the same variant on xlm-roberta-base. The perturbation (T3) runs stay on the plain
-xlm-roberta-base model. Pooling at the marks needs a fast tokenizer, which the script
-asserts. Hyperparameters are tuned per checkpoint with the same grid, so a Portuguese
-model is not handicapped by xlm-roberta's settings.
+The `*_feat`, `*_res` and `*_txt` variants see the cues and are not averaged with B3.
+
+Any variant can run on another checkpoint (`--checkpoint`: `bertimbau`, `bertimbau-large`,
+`albertina`, `albertina-900m` (Portuguese-only, European Portuguese), `mdeberta`, `xlmr-large`).
+It is named like `marked@bertimbau` and compared with the same variant on xlm-roberta-base.
+T3 stays on the plain xlm-roberta-base model. Pooling at the marks needs a fast tokenizer,
+which the script asserts. Settings are tuned per checkpoint with the same grid.
 
 Training: AdamW (weight decay 0.01), linear schedule with 10% warm-up, batch 16,
 maximum length 256, gradient clipping at 1, bf16 autocast on GPU, cross-entropy

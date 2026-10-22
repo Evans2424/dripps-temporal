@@ -34,6 +34,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from sklearn.metrics import f1_score
+from sklearn.model_selection import cross_val_predict
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -112,13 +113,11 @@ def cue_prefix(df):
             f"conector: {'sim' if r.CNT.strip() else 'não'}. " for r in df.itertuples()]
 
 
-def crossfit_offset(X, y, g, labels, seed, prior):
+def crossfit_offset(X, y, g, seed, prior):
     """B3 log-odds for every training row from a B3 fitted without that row's group, minus the log
     prior: the encoder is trained with class weights, so its offset has to be balanced too."""
-    off = np.zeros((len(y), len(labels)))
-    for a, b in evaluate.folds(y, g, seed):
-        off[b] = np.log(models.b3_logit().fit(X[a], y[a]).predict_proba(X[b]).clip(1e-6))
-    return off - np.log(prior)
+    p = cross_val_predict(models.b3_logit(), X, y, cv=list(evaluate.folds(y, g, seed)), method="predict_proba")
+    return np.log(p.clip(1e-6)) - np.log(prior)
 
 
 def group_draws(groups, n_boot=2000):
@@ -177,7 +176,7 @@ def main() -> None:
     if not smoke and not torch.cuda.is_available():
         sys.exit("no CUDA device: the tuned runs would take days on CPU. Run this on the GPU machine.")
     from transformers import AutoTokenizer
-    mask = AutoTokenizer.from_pretrained(encoder.CHECKPOINT).mask_token
+    mask = AutoTokenizer.from_pretrained(encoder.CHECKPOINTS['xlmr']).mask_token
 
     df = io.analysis_frame(io.load())
     if smoke:
@@ -270,7 +269,7 @@ def main() -> None:
                         kw.update(train_feats=Xtr, eval_feats={"orig": Xte})
                     if mode == "res":
                         if off_tr is None:
-                            off_tr = crossfit_offset(X[train], y[train], g[train], labels, SEED + r, prior)
+                            off_tr = crossfit_offset(X[train], y[train], g[train], SEED + r, prior)
                             off_te = np.log(b3p[r, test].clip(1e-6)) - np.log(prior)
                         kw.update(train_off=off_tr, eval_off={"orig": off_te})
                     if mode == "aux":

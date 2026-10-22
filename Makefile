@@ -35,10 +35,11 @@ encoder-feat:  # text + annotated cues; run after `make encoder`, tables then co
 	$(PY) experiments/08_encoder.py --variant plain_feat
 	$(PY) experiments/08_encoder.py --variant marked_feat
 
-encoder-more:  # residual / cues-as-text / auxiliary-cue variants, then plain + marked on Portuguese checkpoints
+encoder-more:  # residual / cues-as-text / auxiliary-cue variants, then plain + marked on BERTimbau, Albertina and mDeBERTa
 	$(PY) experiments/08_encoder.py --variant new
 	$(PY) experiments/08_encoder.py --variant both --checkpoint bertimbau
 	$(PY) experiments/08_encoder.py --variant both --checkpoint albertina
+	$(PY) experiments/08_encoder.py --variant both --checkpoint mdeberta
 
 explain:
 	$(PY) experiments/05_explain.py

@@ -23,7 +23,6 @@ CHECKPOINTS = {
     "albertina": "PORTULAN/albertina-100m-portuguese-ptpt-encoder",
     "albertina-900m": "PORTULAN/albertina-900m-portuguese-ptpt-encoder",
 }
-CHECKPOINT = CHECKPOINTS["xlmr"]
 #: How the annotated cues reach the model (a variant is ``{plain|marked}[_mode][@checkpoint]``):
 #:   feat  cue matrix concatenated to the text vector (a second linear layer, own learning rate)
 #:   res   the text head learns a correction to B3's cross-fitted log-odds (product of experts)
@@ -74,7 +73,7 @@ def cache_key(var, *, texts, marked, perturbed, X, labels, seed, library, extra=
 def fit_predict(train_texts, y_train, eval_texts: dict, *, labels, seed, lr, epochs,
                 train_marks=None, eval_marks: dict | None = None, train_feats=None,
                 eval_feats: dict | None = None, train_off=None, eval_off: dict | None = None,
-                train_aux=None, aux_sizes=(), checkpoint=CHECKPOINT, **hp):
+                train_aux=None, aux_sizes=(), checkpoint=CHECKPOINTS["xlmr"], **hp):
     """Fit on ``train_texts``; return class probabilities for each named list of texts.
 
     ``*_marks`` hold, per text, the character offsets of the tokens to pool at (None = missing,

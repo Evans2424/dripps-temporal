@@ -5,3 +5,7 @@ torch
 transformers>=5
 spacy>=3.7
 # python -m spacy download pt_core_news_sm
+# DeBERTa-family tokenizers (mdeberta, albertina) are converted to fast ones through these
+tiktoken
+sentencepiece
+protobuf

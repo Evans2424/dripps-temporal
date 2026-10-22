@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "scikit-learn": {
+      "source": "k-dense-ai/scientific-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/scikit-learn/SKILL.md",
+      "computedHash": "124b80e65a64ec6b763d0dcf469b8314c3f06ef3065e0b488707f8978085ef25"
+    },
+    "statistical-analysis": {
+      "source": "k-dense-ai/scientific-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/statistical-analysis/SKILL.md",
+      "computedHash": "58fe533547c45096fe784f043609fe07742b5390f056ce850ab9ecb239f04c73"
+    },
+    "statsmodels": {
+      "source": "k-dense-ai/scientific-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/statsmodels/SKILL.md",
+      "computedHash": "90d8ce6e44f063f6f8ad6506b827f7ebb7a39955365603b96fbca47e1fcca5df"
+    }
+  }
+}
