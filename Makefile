@@ -1,6 +1,6 @@
 PY := .venv/bin/python
 
-.PHONY: all ingest test audit baselines hierarchy varieties hierarchical encoder encoder-feat explain viewer app clean
+.PHONY: all ingest test audit baselines hierarchy varieties hierarchical encoder encoder-feat encoder-more explain viewer app clean
 
 all: ingest test audit baselines hierarchy varieties hierarchical explain viewer
 
@@ -34,6 +34,11 @@ encoder:
 encoder-feat:  # text + annotated cues; run after `make encoder`, tables then cover all four variants
 	$(PY) experiments/08_encoder.py --variant plain_feat
 	$(PY) experiments/08_encoder.py --variant marked_feat
+
+encoder-more:  # residual / cues-as-text / auxiliary-cue variants, then plain + marked on Portuguese checkpoints
+	$(PY) experiments/08_encoder.py --variant new
+	$(PY) experiments/08_encoder.py --variant both --checkpoint bertimbau
+	$(PY) experiments/08_encoder.py --variant both --checkpoint albertina
 
 explain:
 	$(PY) experiments/05_explain.py

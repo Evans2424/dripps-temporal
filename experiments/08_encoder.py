@@ -13,9 +13,12 @@ training-fold class prior (and renormalised) before they are averaged.
 Writes results/tables/t1_encoder.csv, t1_encoder_preds.csv, t1_encoder_config.csv,
 t3_ablation.csv and t3_span_sample.csv (50 rows to check span recovery by hand).
 
-  --variant V                   plain, marked, plain_feat, marked_feat, both (plain + marked, the
-                                default) or all four; tables always use every variant that is fully
+  --variant V                   {plain|marked}[_feat|_res|_txt|_aux], or a group: both (plain + marked,
+                                the default), all (those two plus their _feat twins), new (the _res, _txt
+                                and _aux versions of both). Tables use every variant that is fully
                                 cached, so run each variant, then any run rewrites the tables
+  --checkpoint C                encoder.CHECKPOINTS key (xlmr, bertimbau, albertina, mdeberta, xlmr-large,
+                                ...); a variant on a non-default checkpoint is named like marked@bertimbau
   --smoke                       100 rows, one seed, one config, one epoch, writes nothing
 """
 
@@ -36,9 +39,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from dripps import ablate, encoder, evaluate, features, io, models  # noqa: E402
+from dripps import schema  # noqa: E402
 from dripps.schema import SEED  # noqa: E402
 
-ALL = ["plain", "marked", "plain_feat", "marked_feat"]
+BASES = ["plain", "marked"]
+GROUPS = {"both": BASES, "all": BASES + [f"{b}_feat" for b in BASES],
+          "new": [f"{b}_{m}" for m in ("res", "txt", "aux") for b in BASES]}
+#: annotated cue columns the auxiliary heads predict (the model never sees them as input)
+AUX_COLS = ("ATMC", "ATSC", "TMC", "Position", "CNT")
 N_SEEDS = 5  # the plan's minimum; B3 is rescored on the same seeds
 VARIANTS = ["mask_participle", "mask_main_verb", "mask_adverbials", "move_apc_initial",
             "ctrl_participle", "ctrl_main_verb", "ctrl_adverbials"]
@@ -83,6 +91,36 @@ def build_variants(texts, mask):
     return out, pd.DataFrame(rows), marked, marks
 
 
+def _aspect_words(code):
+    dyn, dur, tel = schema.ASPECT_PRIMITIVES[code]
+    return f"{'dinâmico' if dyn else 'estativo'}, {'durativo' if dur else 'pontual'}, {'télico' if tel else 'atélico'}"
+
+
+def _tense_words(code):
+    t = schema.TAM_BUNDLE[code]
+    flags = [w for k, w in (("perfective", "perfetivo"), ("progressive", "progressivo"), ("perfect", "perfeito"),
+                            ("irrealis", "irrealis")) if t[k]]
+    return " ".join([{"past": "passado", "present": "presente", "future": "futuro", "nonfinite": "não finito"}[t["tense"]],
+                     *flags])
+
+
+def cue_prefix(df):
+    """The annotated cues as words (the Moens and Steedman primitives and the TAM bundle, not the corpus
+    codes, which are subword soup to a pretrained model), put in front of the sentence for ``_txt``."""
+    return [f"aspeto da oração principal: {_aspect_words(r.ATMC)}; tempo: {_tense_words(r.TMC)}; "
+            f"aspeto da participial: {_aspect_words(r.ATSC)}; posição: {'final' if r.Position == 'Final' else 'não final'}; "
+            f"conector: {'sim' if r.CNT.strip() else 'não'}. " for r in df.itertuples()]
+
+
+def crossfit_offset(X, y, g, labels, seed, prior):
+    """B3 log-odds for every training row from a B3 fitted without that row's group, minus the log
+    prior: the encoder is trained with class weights, so its offset has to be balanced too."""
+    off = np.zeros((len(y), len(labels)))
+    for a, b in evaluate.folds(y, g, seed):
+        off[b] = np.log(models.b3_logit().fit(X[a], y[a]).predict_proba(X[b]).clip(1e-6))
+    return off - np.log(prior)
+
+
 def group_draws(groups, n_boot=2000):
     """Row indices of ``n_boot`` sentence-group bootstrap draws; built once per row subset."""
     rng = np.random.default_rng(SEED)
@@ -95,15 +133,17 @@ def mean_ci(values, draws):
     return float(values.mean()), float(np.quantile(boot, 0.025)), float(np.quantile(boot, 0.975))
 
 
-def paired(y, a, b, labels, draws):
-    """Observed macro-F1(a) - macro-F1(b) over (seeds, n) predictions, with a group-bootstrap CI."""
+def boot_f1(y, p, labels, draws, rs):
+    """Macro-F1 of one model on each bootstrap draw (seed ``rs[d]`` for draw d), computed once per model."""
+    return np.array([evaluate.macro_f1(y[idx], p[r][idx], labels) for idx, r in zip(draws, rs)])
+
+
+def paired(y, a, b, labels, boots):
+    """Observed macro-F1(a) - macro-F1(b) over (seeds, n) predictions, with a group-bootstrap CI;
+    ``boots`` holds boot_f1 for a and b, so every model is resampled once, not once per contrast."""
     obs = evaluate.macro_f1_per_repeat(y, a, labels).mean() - evaluate.macro_f1_per_repeat(y, b, labels).mean()
-    rng = np.random.default_rng(SEED)
-    boot = []
-    for idx in draws:
-        r = rng.integers(len(a))  # fold the seed jitter in, as evaluate.bootstrap_group_ci does
-        boot.append(evaluate.macro_f1(y[idx], a[r][idx], labels) - evaluate.macro_f1(y[idx], b[r][idx], labels))
-    return float(obs), float(np.quantile(boot, 0.025)), float(np.quantile(boot, 0.975))
+    d = boots[0] - boots[1]
+    return float(obs), float(np.quantile(d, 0.025)), float(np.quantile(d, 0.975))
 
 
 def summarise(name, p, y, g, labels, m):
@@ -120,10 +160,18 @@ def main() -> None:
     ap.add_argument("--smoke", action="store_true")
     ap.add_argument("--adopt", type=Path, help="old single-directory cache whose plain and marked folds to "
                     "copy into the per-variant caches (runs made before the per-variant cache keys)")
-    ap.add_argument("--variant", choices=[*ALL, "both", "all"], default="both")
+    ap.add_argument("--variant", default="both")
+    ap.add_argument("--checkpoint", choices=list(encoder.CHECKPOINTS), default="xlmr")
     args = ap.parse_args()
     smoke = args.smoke
-    todo = {"both": ALL[:2], "all": ALL}.get(args.variant, [args.variant])
+    ck = args.checkpoint
+    if "@" in args.variant:
+        sys.exit("name the checkpoint with --checkpoint, not in --variant")
+    todo = [encoder.name(*encoder.parse(v)[:2], ck) for v in GROUPS.get(args.variant, [args.variant])]
+    for v in todo:
+        base, mode, _ = encoder.parse(v)
+        if base not in BASES or mode not in ("", *encoder.MODES):
+            sys.exit(f"unknown variant {v!r}")
 
     import torch
     if not smoke and not torch.cuda.is_available():
@@ -141,20 +189,36 @@ def main() -> None:
     labels = sorted(pd.unique(y))
     n_seeds = 1 if smoke else N_SEEDS
     grid = lambda var: [dict(lr=3e-5, epochs=1)] if smoke else (  # noqa: E731
-        encoder.CONFIGS_FEAT if var.endswith("_feat") else encoder.CONFIGS)
+        encoder.CONFIGS_FEAT if encoder.parse(var)[1] == "feat" else encoder.CONFIGS)
 
     perturbed, span_df, marked, marks = build_variants(texts, mask)
     import transformers
     # a cached fold is only valid for the exact inputs, settings and library versions that produced it;
     # each variant is keyed on its own inputs, so adding or retuning one never discards another's folds
-    cache = {v: ROOT / "results/cache_encoder" / encoder.cache_key(
-        v, texts=texts, marked=marked, perturbed=perturbed, X=X, labels=labels, seed=SEED,
-        library=transformers.__version__) for v in ALL}
+    prefix = cue_prefix(df)
+    aux = np.stack([pd.factorize(df[c])[0] for c in AUX_COLS], 1)  # -1 where the cue is missing
+    aux_sizes = [int(aux[:, j].max()) + 1 for j in range(aux.shape[1])]
+    # text actually read by each variant: the sentence, or the sentence with the cue words in front
+    # (marks move by the prefix length)
+    cued = [p + t for p, t in zip(prefix, texts)]
+    cued_marked = [p + t for p, t in zip(prefix, marked)]
+    cued_marks = [tuple(None if m is None else m + len(p) for m in mk) for p, mk in zip(prefix, marks)]
+    known = [encoder.name(b, m, c) for c in encoder.CHECKPOINTS for b in BASES for m in ("", *encoder.MODES)]
+    extra = {"res": [np.asarray(X).round(6).tolist(), repr(models.b3_logit())],  # the offsets depend on B3's spec
+             "aux": [aux.tolist(), list(AUX_COLS), encoder.AUX_WEIGHT]}
+    cache = {}
+    for v in known:
+        b, m, _ = encoder.parse(v)
+        ex = cued if m == "txt" and b == "plain" else cued_marked if m == "txt" else extra.get(m)
+        cache[v] = ROOT / "results/cache_encoder" / encoder.cache_key(
+            v, texts=texts, marked=marked, perturbed=perturbed, X=X, labels=labels, seed=SEED,
+            library=transformers.__version__, extra=ex)
     if not smoke:
-        for d in cache.values():
-            d.mkdir(parents=True, exist_ok=True)
+        for v in todo:
+            cache[v].mkdir(parents=True, exist_ok=True)
     for var in ("plain", "marked") if args.adopt and not smoke else ():
         n = 0
+        cache[var].mkdir(parents=True, exist_ok=True)
         for f in args.adopt.glob(f"{var}_s*_f*.npz"):
             dst = cache[var] / f.name.removeprefix(f"{var}_")
             if not dst.exists():
@@ -163,7 +227,7 @@ def main() -> None:
         print(f"adopted {n} {var} folds from {args.adopt}", flush=True)
     cached = lambda var: all((cache[var] / f"s{r}_f{k}.npz").exists()  # noqa: E731
                              for r in range(n_seeds) for k in range(evaluate.N_SPLITS))
-    used = [v for v in ALL if v in todo or (not smoke and cached(v))]
+    used = [v for v in known if v in todo or (not smoke and cached(v))]
     print(f"{len(df)} rows, {n_seeds} seeds, computing {todo} ({[len(grid(v)) for v in todo]} configs each), "
           f"tables from {used}", flush=True)
     print({v: sum(t is not None for t in perturbed[v]) for v in VARIANTS},
@@ -183,13 +247,16 @@ def main() -> None:
             # B3's own scaling, fitted on the training fold (the inner validation rows inside
             # select_and_predict therefore help set the mean and std; unsupervised and small)
             Xtr, Xte = b3["scale"].transform(X[train]), b3["scale"].transform(X[test])
+            off_tr = off_te = None  # B3 log-odds for the _res variants, built when first needed
             for var in used:
                 f = cache[var] / f"s{r}_f{k}.npz"
                 if f.exists() and not smoke:
                     z = np.load(f)
                 else:
-                    base, feat = var.removesuffix("_feat"), var.endswith("_feat")
-                    src = texts if base == "plain" else marked
+                    base, mode, ck_v = encoder.parse(var)
+                    src = {("plain", "txt"): cued, ("marked", "txt"): cued_marked}.get(
+                        (base, mode), texts if base == "plain" else marked)
+                    mk = cued_marks if mode == "txt" else marks
                     if var == "plain":
                         where = {v: [i for i in test if perturbed[v][i] is not None] for v in VARIANTS}
                         ev = {"orig": [texts[i] for i in test],
@@ -198,9 +265,18 @@ def main() -> None:
                         ev = {"orig": [src[i] for i in test]}
                     kw = {}
                     if base == "marked":
-                        kw.update(train_marks=[marks[i] for i in train], eval_marks={"orig": [marks[i] for i in test]})
-                    if feat:
+                        kw.update(train_marks=[mk[i] for i in train], eval_marks={"orig": [mk[i] for i in test]})
+                    if mode == "feat":
                         kw.update(train_feats=Xtr, eval_feats={"orig": Xte})
+                    if mode == "res":
+                        if off_tr is None:
+                            off_tr = crossfit_offset(X[train], y[train], g[train], labels, SEED + r, prior)
+                            off_te = np.log(b3p[r, test].clip(1e-6)) - np.log(prior)
+                        kw.update(train_off=off_tr, eval_off={"orig": off_te})
+                    if mode == "aux":
+                        kw.update(train_aux=aux[train], aux_sizes=aux_sizes)
+                    if ck_v != "xlmr":
+                        kw.update(checkpoint=encoder.CHECKPOINTS[ck_v])
                     out, cfg = encoder.select_and_predict(
                         [src[i] for i in train], y[train], g[train], ev, labels=labels, seed=SEED + r,
                         configs=grid(var), **kw)
@@ -229,15 +305,18 @@ def main() -> None:
     guess = {"B3 logit": lab[b3p.argmax(-1)]}
     for var in used:
         guess[f"encoder {var}"] = lab[probs[var].argmax(-1)]
-        if var.endswith("_feat"):  # already sees the cues; averaging with B3 would count them twice
+        if encoder.parse(var)[1] in ("feat", "res", "txt"):  # already see the cues; averaging with B3 would count them twice
             continue
         for w in (0.5, 0.25, 0.75):  # 0.5 is the pre-set headline; the others are post hoc sensitivity
             tag = "" if w == 0.5 else " (post hoc)"
             guess[f"B3 + encoder {var}, w={w}{tag}"] = lab[((1 - w) * b3p + w * adj[var]).argmax(-1)]
     pairs = [(m, "B3 logit") for m in guess if m != "B3 logit"]
-    if "plain" in used and "marked" in used:
-        pairs.append(("encoder marked", "encoder plain"))
-    pairs += [(f"encoder {b}_feat", f"encoder {b}") for b in ("plain", "marked") if b in used and f"{b}_feat" in used]
+    for v in used:  # a variant against its twin without the cues, its twin on the default checkpoint, and marked vs plain
+        b, m, c = encoder.parse(v)
+        for twin in (encoder.name(b, "", c) if m else None, encoder.name(b, m, "xlmr") if c != "xlmr" else None,
+                     encoder.name("plain", m, c) if b == "marked" else None):
+            if twin in used and (f"encoder {v}", f"encoder {twin}") not in pairs:
+                pairs.append((f"encoder {v}", f"encoder {twin}"))
     # Sentences annotated for several APCs appear as identical text with different labels. A text-only
     # model cannot separate them (B3's per-clause features can), so score the other rows on their own.
     amb = (df.groupby("sentence_norm")[features.target(df).name].transform("nunique") > 1).to_numpy()
@@ -245,8 +324,12 @@ def main() -> None:
     for tag, m in (("", np.ones(len(y), bool)), (" (text-unambiguous rows)", ~amb)):
         rows += [summarise(name + tag, p, y, g, labels, m) for name, p in guess.items()]
         draws = group_draws(g[m])
+        rng = np.random.default_rng(SEED)
+        rs = [rng.integers(n_seeds) for _ in draws]  # the seed jitter folded in, as evaluate.bootstrap_group_ci does
+        print(f"bootstrap: {len(guess)} models, {len(pairs)} paired contrasts{tag}", flush=True)
+        boots = {k: boot_f1(y[m], guess[k][:, m], labels, draws, rs) for k in guess}
         for a, b in pairs:
-            d, lo, hi = paired(y[m], guess[a][:, m], guess[b][:, m], labels, draws)
+            d, lo, hi = paired(y[m], guess[a][:, m], guess[b][:, m], labels, (boots[a], boots[b]))
             rows.append({"model": f"{a} - {b} (paired){tag}", "n": int(m.sum()), "macro_f1": d, "ci_lo": lo, "ci_hi": hi})
     tab = ROOT / "results/tables"
     pd.DataFrame(rows).round(4).to_csv(tab / "t1_encoder.csv", index=False)
