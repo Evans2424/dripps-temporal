@@ -39,7 +39,7 @@ def _status():
 
 def _t1_chart(t1):
     d = t1[~t1["model"].str.contains("paired") & ~t1["model"].str.contains("text-unambiguous")]
-    base = alt.Chart(d).encode(y=alt.Y("model:N", title=None, sort=None))
+    base = alt.Chart(d, height=18 * len(d)).encode(y=alt.Y("model:N", title=None, sort=None))
     st.altair_chart(base.mark_bar().encode(x=alt.X("macro_f1:Q", title="out-of-fold macro-F1", scale=alt.Scale(domain=[0, 0.8])))
                     + base.mark_rule().encode(x="ci_lo:Q", x2="ci_hi:Q"), width="stretch")
 

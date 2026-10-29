@@ -1,5 +1,4 @@
 model,n,macro_f1,ci_lo,ci_hi,sd_seed,f1_Ant,f1_Post,f1_Simul
-B3 logit,1038,0.6943,0.6652,0.7241,0.0016,0.6895,0.7489,0.6443
 encoder plain,1038,0.6212,0.4868,0.6913,0.0671,0.589,0.6919,0.5828
 "B3 + encoder plain, w=0.5",1038,0.6715,0.6263,0.7078,0.016,0.6512,0.7496,0.6137
 "B3 + encoder plain, w=0.25 (post hoc)",1038,0.7076,0.6756,0.738,0.0065,0.7084,0.7656,0.6489
@@ -23,7 +22,6 @@ encoder marked_feat - B3 logit (paired),1038,0.0075,-0.0265,0.0385,,,,
 encoder marked - encoder plain (paired),1038,0.0697,-0.0069,0.2155,,,,
 encoder plain_feat - encoder plain (paired),1038,0.045,-0.0568,0.1788,,,,
 encoder marked_feat - encoder marked (paired),1038,0.0109,-0.0178,0.0399,,,,
-B3 logit (text-unambiguous rows),1036,0.6947,0.6647,0.7229,0.0016,0.6895,0.7492,0.6452
 encoder plain (text-unambiguous rows),1036,0.6214,0.4893,0.6921,0.0671,0.589,0.6927,0.5825
 "B3 + encoder plain, w=0.5 (text-unambiguous rows)",1036,0.6718,0.6263,0.7084,0.016,0.6512,0.7502,0.6139
 "B3 + encoder plain, w=0.25 (post hoc) (text-unambiguous rows)",1036,0.7081,0.6759,0.7385,0.0066,0.7084,0.7659,0.6499
@@ -47,3 +45,111 @@ encoder marked_feat - B3 logit (paired) (text-unambiguous rows),1036,0.0075,-0.0
 encoder marked - encoder plain (paired) (text-unambiguous rows),1036,0.0697,-0.0041,0.2168,,,,
 encoder plain_feat - encoder plain (paired) (text-unambiguous rows),1036,0.0451,-0.058,0.1809,,,,
 encoder marked_feat - encoder marked (paired) (text-unambiguous rows),1036,0.0111,-0.0169,0.0386,,,,
+encoder marked_feat - encoder plain_feat (paired),1038,0.0356,-0.0165,0.079,,,,
+encoder marked_feat - encoder plain_feat (paired) (text-unambiguous rows),1036,0.0356,-0.0173,0.0785,,,,
+B3 logit,1038,0.6943,0.6652,0.7241,0.0016,0.6895,0.7489,0.6443
+encoder plain_res,1038,0.7015,0.6685,0.7322,0.007,0.7067,0.753,0.645
+encoder plain_txt,1038,0.6678,0.5991,0.7171,0.0312,0.6382,0.7433,0.622
+encoder plain_aux,1038,0.6667,0.6226,0.702,0.0168,0.6502,0.7506,0.5994
+"B3 + encoder plain_aux, w=0.5",1038,0.6833,0.6468,0.7167,0.0117,0.6673,0.7639,0.6186
+"B3 + encoder plain_aux, w=0.25 (post hoc)",1038,0.7117,0.6799,0.7422,0.0067,0.7057,0.7723,0.6572
+"B3 + encoder plain_aux, w=0.75 (post hoc)",1038,0.6696,0.6282,0.7046,0.0152,0.6508,0.7546,0.6035
+encoder marked_res,1038,0.6958,0.6632,0.7258,0.0076,0.6997,0.7547,0.633
+encoder marked_txt,1038,0.6768,0.6216,0.7248,0.0245,0.6642,0.7551,0.611
+encoder marked_aux,1038,0.6972,0.6666,0.7266,0.0031,0.6959,0.7697,0.6259
+"B3 + encoder marked_aux, w=0.5",1038,0.7052,0.6741,0.7358,0.0051,0.7024,0.7766,0.6367
+"B3 + encoder marked_aux, w=0.25 (post hoc)",1038,0.7158,0.6839,0.7478,0.0077,0.7082,0.7768,0.6623
+"B3 + encoder marked_aux, w=0.75 (post hoc)",1038,0.6997,0.6693,0.7283,0.0042,0.6964,0.7712,0.6316
+encoder plain@bertimbau,1038,0.6522,0.6177,0.6852,0.0092,0.621,0.7435,0.5921
+"B3 + encoder plain@bertimbau, w=0.5",1038,0.6719,0.6357,0.7052,0.0095,0.6515,0.7533,0.6107
+"B3 + encoder plain@bertimbau, w=0.25 (post hoc)",1038,0.7147,0.6848,0.7435,0.003,0.7137,0.7715,0.659
+"B3 + encoder plain@bertimbau, w=0.75 (post hoc)",1038,0.6553,0.6208,0.6875,0.0097,0.6232,0.7458,0.5969
+encoder marked@bertimbau,1038,0.6582,0.6237,0.6934,0.01,0.6492,0.7353,0.5901
+"B3 + encoder marked@bertimbau, w=0.5",1038,0.6841,0.6477,0.7178,0.0111,0.6797,0.7571,0.6155
+"B3 + encoder marked@bertimbau, w=0.25 (post hoc)",1038,0.7141,0.6823,0.7429,0.0047,0.713,0.7721,0.6571
+"B3 + encoder marked@bertimbau, w=0.75 (post hoc)",1038,0.6645,0.6297,0.6974,0.0092,0.6553,0.7398,0.5985
+encoder plain_res - B3 logit (paired),1038,0.0073,-0.0093,0.0229,,,,
+encoder plain_txt - B3 logit (paired),1038,-0.0264,-0.0963,0.0228,,,,
+encoder plain_aux - B3 logit (paired),1038,-0.0275,-0.0744,0.0128,,,,
+"B3 + encoder plain_aux, w=0.5 - B3 logit (paired)",1038,-0.011,-0.0507,0.0243,,,,
+"B3 + encoder plain_aux, w=0.25 (post hoc) - B3 logit (paired)",1038,0.0175,-0.0035,0.0397,,,,
+"B3 + encoder plain_aux, w=0.75 (post hoc) - B3 logit (paired)",1038,-0.0247,-0.0697,0.0147,,,,
+encoder marked_res - B3 logit (paired),1038,0.0016,-0.0216,0.0242,,,,
+encoder marked_txt - B3 logit (paired),1038,-0.0175,-0.0718,0.0347,,,,
+encoder marked_aux - B3 logit (paired),1038,0.0029,-0.03,0.0343,,,,
+"B3 + encoder marked_aux, w=0.5 - B3 logit (paired)",1038,0.011,-0.0197,0.0399,,,,
+"B3 + encoder marked_aux, w=0.25 (post hoc) - B3 logit (paired)",1038,0.0215,0.0016,0.0439,,,,
+"B3 + encoder marked_aux, w=0.75 (post hoc) - B3 logit (paired)",1038,0.0055,-0.0272,0.0365,,,,
+encoder plain@bertimbau - B3 logit (paired),1038,-0.042,-0.0783,-0.0038,,,,
+"B3 + encoder plain@bertimbau, w=0.5 - B3 logit (paired)",1038,-0.0224,-0.0595,0.0122,,,,
+"B3 + encoder plain@bertimbau, w=0.25 (post hoc) - B3 logit (paired)",1038,0.0205,0.0017,0.0386,,,,
+"B3 + encoder plain@bertimbau, w=0.75 (post hoc) - B3 logit (paired)",1038,-0.0389,-0.0758,-0.0021,,,,
+encoder marked@bertimbau - B3 logit (paired),1038,-0.0361,-0.0751,0.0015,,,,
+"B3 + encoder marked@bertimbau, w=0.5 - B3 logit (paired)",1038,-0.0102,-0.0489,0.0264,,,,
+"B3 + encoder marked@bertimbau, w=0.25 (post hoc) - B3 logit (paired)",1038,0.0198,0.0014,0.0384,,,,
+"B3 + encoder marked@bertimbau, w=0.75 (post hoc) - B3 logit (paired)",1038,-0.0297,-0.0695,0.0073,,,,
+encoder marked_res - encoder plain_res (paired),1038,-0.0057,-0.0258,0.0131,,,,
+encoder marked_txt - encoder plain_txt (paired),1038,0.0089,-0.0517,0.0762,,,,
+encoder marked_aux - encoder plain_aux (paired),1038,0.0304,-0.004,0.0728,,,,
+encoder marked@bertimbau - encoder plain@bertimbau (paired),1038,0.006,-0.03,0.0409,,,,
+B3 logit (text-unambiguous rows),1036,0.6947,0.6647,0.7229,0.0016,0.6895,0.7492,0.6452
+encoder plain_res (text-unambiguous rows),1036,0.702,0.6685,0.7328,0.007,0.7067,0.7533,0.6459
+encoder plain_txt (text-unambiguous rows),1036,0.6682,0.6012,0.7183,0.0312,0.6382,0.7438,0.6225
+encoder plain_aux (text-unambiguous rows),1036,0.6669,0.6206,0.7027,0.0168,0.6502,0.7514,0.5991
+"B3 + encoder plain_aux, w=0.5 (text-unambiguous rows)",1036,0.6835,0.6443,0.7167,0.0118,0.6673,0.7647,0.6186
+"B3 + encoder plain_aux, w=0.25 (post hoc) (text-unambiguous rows)",1036,0.7122,0.6798,0.7414,0.0067,0.7057,0.7726,0.6582
+"B3 + encoder plain_aux, w=0.75 (post hoc) (text-unambiguous rows)",1036,0.6698,0.625,0.7046,0.0152,0.6508,0.7554,0.6032
+encoder marked_res (text-unambiguous rows),1036,0.6962,0.6622,0.7267,0.0075,0.6997,0.7552,0.6335
+encoder marked_txt (text-unambiguous rows),1036,0.677,0.6231,0.7242,0.0245,0.6642,0.7559,0.6108
+encoder marked_aux (text-unambiguous rows),1036,0.6974,0.6663,0.7259,0.0031,0.6959,0.7706,0.6258
+"B3 + encoder marked_aux, w=0.5 (text-unambiguous rows)",1036,0.7055,0.674,0.7351,0.0051,0.7024,0.7774,0.6368
+"B3 + encoder marked_aux, w=0.25 (post hoc) (text-unambiguous rows)",1036,0.7162,0.6842,0.7486,0.0077,0.7082,0.7772,0.6634
+"B3 + encoder marked_aux, w=0.75 (post hoc) (text-unambiguous rows)",1036,0.7,0.6684,0.7284,0.0042,0.6964,0.772,0.6314
+encoder plain@bertimbau (text-unambiguous rows),1036,0.6524,0.6178,0.6856,0.0092,0.621,0.7444,0.5918
+"B3 + encoder plain@bertimbau, w=0.5 (text-unambiguous rows)",1036,0.672,0.6348,0.7038,0.0095,0.6515,0.7541,0.6105
+"B3 + encoder plain@bertimbau, w=0.25 (post hoc) (text-unambiguous rows)",1036,0.7152,0.6847,0.7438,0.003,0.7137,0.7719,0.66
+"B3 + encoder plain@bertimbau, w=0.75 (post hoc) (text-unambiguous rows)",1036,0.6555,0.6193,0.6889,0.0097,0.6232,0.7466,0.5966
+encoder marked@bertimbau (text-unambiguous rows),1036,0.6583,0.624,0.6932,0.01,0.6492,0.7361,0.5897
+"B3 + encoder marked@bertimbau, w=0.5 (text-unambiguous rows)",1036,0.6843,0.6475,0.7181,0.0111,0.6797,0.7578,0.6155
+"B3 + encoder marked@bertimbau, w=0.25 (post hoc) (text-unambiguous rows)",1036,0.7145,0.6824,0.7443,0.0047,0.713,0.7724,0.6581
+"B3 + encoder marked@bertimbau, w=0.75 (post hoc) (text-unambiguous rows)",1036,0.6647,0.628,0.6979,0.0092,0.6553,0.7406,0.5981
+encoder plain_res - B3 logit (paired) (text-unambiguous rows),1036,0.0073,-0.0102,0.0239,,,,
+encoder plain_txt - B3 logit (paired) (text-unambiguous rows),1036,-0.0265,-0.0957,0.0252,,,,
+encoder plain_aux - B3 logit (paired) (text-unambiguous rows),1036,-0.0277,-0.0768,0.0132,,,,
+"B3 + encoder plain_aux, w=0.5 - B3 logit (paired) (text-unambiguous rows)",1036,-0.0111,-0.0502,0.0256,,,,
+"B3 + encoder plain_aux, w=0.25 (post hoc) - B3 logit (paired) (text-unambiguous rows)",1036,0.0175,-0.0045,0.0397,,,,
+"B3 + encoder plain_aux, w=0.75 (post hoc) - B3 logit (paired) (text-unambiguous rows)",1036,-0.0249,-0.0713,0.0136,,,,
+encoder marked_res - B3 logit (paired) (text-unambiguous rows),1036,0.0015,-0.0234,0.024,,,,
+encoder marked_txt - B3 logit (paired) (text-unambiguous rows),1036,-0.0177,-0.074,0.0378,,,,
+encoder marked_aux - B3 logit (paired) (text-unambiguous rows),1036,0.0027,-0.032,0.0383,,,,
+"B3 + encoder marked_aux, w=0.5 - B3 logit (paired) (text-unambiguous rows)",1036,0.0109,-0.0214,0.0411,,,,
+"B3 + encoder marked_aux, w=0.25 (post hoc) - B3 logit (paired) (text-unambiguous rows)",1036,0.0216,0.0006,0.0449,,,,
+"B3 + encoder marked_aux, w=0.75 (post hoc) - B3 logit (paired) (text-unambiguous rows)",1036,0.0053,-0.0278,0.0375,,,,
+encoder plain@bertimbau - B3 logit (paired) (text-unambiguous rows),1036,-0.0423,-0.0795,-0.0051,,,,
+"B3 + encoder plain@bertimbau, w=0.5 - B3 logit (paired) (text-unambiguous rows)",1036,-0.0226,-0.0591,0.0122,,,,
+"B3 + encoder plain@bertimbau, w=0.25 (post hoc) - B3 logit (paired) (text-unambiguous rows)",1036,0.0205,0.0008,0.039,,,,
+"B3 + encoder plain@bertimbau, w=0.75 (post hoc) - B3 logit (paired) (text-unambiguous rows)",1036,-0.0392,-0.0773,-0.0026,,,,
+encoder marked@bertimbau - B3 logit (paired) (text-unambiguous rows),1036,-0.0363,-0.0755,0.0033,,,,
+"B3 + encoder marked@bertimbau, w=0.5 - B3 logit (paired) (text-unambiguous rows)",1036,-0.0103,-0.0474,0.0281,,,,
+"B3 + encoder marked@bertimbau, w=0.25 (post hoc) - B3 logit (paired) (text-unambiguous rows)",1036,0.0199,0.0006,0.0385,,,,
+"B3 + encoder marked@bertimbau, w=0.75 (post hoc) - B3 logit (paired) (text-unambiguous rows)",1036,-0.03,-0.0701,0.0079,,,,
+encoder marked_res - encoder plain_res (paired) (text-unambiguous rows),1036,-0.0058,-0.0265,0.0142,,,,
+encoder marked_txt - encoder plain_txt (paired) (text-unambiguous rows),1036,0.0088,-0.0505,0.0741,,,,
+encoder marked_aux - encoder plain_aux (paired) (text-unambiguous rows),1036,0.0305,-0.004,0.0748,,,,
+encoder marked@bertimbau - encoder plain@bertimbau (paired) (text-unambiguous rows),1036,0.006,-0.0323,0.041,,,,
+encoder plain_res - encoder plain (paired),1038,0.0803,0.0064,0.2236,,,,
+encoder plain_txt - encoder plain (paired),1038,0.0466,-0.017,0.1378,,,,
+encoder plain_aux - encoder plain (paired),1038,0.0455,-0.0284,0.158,,,,
+encoder marked_res - encoder marked (paired),1038,0.0049,-0.0342,0.0434,,,,
+encoder marked_txt - encoder marked (paired),1038,-0.0141,-0.06,0.0311,,,,
+encoder marked_aux - encoder marked (paired),1038,0.0063,-0.0218,0.0347,,,,
+encoder plain@bertimbau - encoder plain (paired),1038,0.031,-0.0329,0.1649,,,,
+encoder marked@bertimbau - encoder marked (paired),1038,-0.0327,-0.068,-0.0006,,,,
+encoder plain_res - encoder plain (paired) (text-unambiguous rows),1036,0.0806,0.0061,0.2228,,,,
+encoder plain_txt - encoder plain (paired) (text-unambiguous rows),1036,0.0468,-0.0198,0.1339,,,,
+encoder plain_aux - encoder plain (paired) (text-unambiguous rows),1036,0.0455,-0.0281,0.1565,,,,
+encoder marked_res - encoder marked (paired) (text-unambiguous rows),1036,0.0051,-0.0348,0.0423,,,,
+encoder marked_txt - encoder marked (paired) (text-unambiguous rows),1036,-0.0141,-0.0639,0.0302,,,,
+encoder marked_aux - encoder marked (paired) (text-unambiguous rows),1036,0.0063,-0.0218,0.0344,,,,
+encoder plain@bertimbau - encoder plain (paired) (text-unambiguous rows),1036,0.031,-0.0335,0.1636,,,,
+encoder marked@bertimbau - encoder marked (paired) (text-unambiguous rows),1036,-0.0328,-0.0669,-0.0019,,,,

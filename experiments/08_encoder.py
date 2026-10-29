@@ -207,8 +207,12 @@ def main() -> None:
              "aux": [aux.tolist(), list(AUX_COLS), encoder.AUX_WEIGHT]}
     cache = {}
     for v in known:
-        b, m, _ = encoder.parse(v)
+        b, m, ck_k = encoder.parse(v)
         ex = cued if m == "txt" and b == "plain" else cued_marked if m == "txt" else extra.get(m)
+        tags = (["fp32 tf32"] if ck_k in encoder.FP32_CHECKPOINTS else []) + (  # numerics differ from folds cached before
+            [["reviewed labels", y.tolist()]] if "review" in df.columns else [])  # labels and folds differ from the original export
+        if tags:
+            ex = [ex, *tags]
         cache[v] = ROOT / "results/cache_encoder" / encoder.cache_key(
             v, texts=texts, marked=marked, perturbed=perturbed, X=X, labels=labels, seed=SEED,
             library=transformers.__version__, extra=ex)

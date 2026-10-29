@@ -23,6 +23,9 @@ CHECKPOINTS = {
     "albertina": "PORTULAN/albertina-100m-portuguese-ptpt-encoder",
     "albertina-900m": "PORTULAN/albertina-900m-portuguese-ptpt-encoder",
 }
+#: checkpoints trained in fp32 (their attention masking overflows under bf16 autocast); part of their cache key
+FP32_CHECKPOINTS = ("mdeberta", "albertina", "albertina-900m")
+
 #: How the annotated cues reach the model (a variant is ``{plain|marked}[_mode][@checkpoint]``):
 #:   feat  cue matrix concatenated to the text vector (a second linear layer, own learning rate)
 #:   res   the text head learns a correction to B3's cross-fitted log-odds (product of experts)
@@ -99,6 +102,11 @@ def fit_predict(train_texts, y_train, eval_texts: dict, *, labels, seed, lr, epo
     tok = AutoTokenizer.from_pretrained(checkpoint)
     assert tok.is_fast, "pooling at marks needs offset mappings, which only fast tokenizers give"
     enc = AutoModel.from_pretrained(checkpoint, dtype=torch.float32).to(dev)
+    # DeBERTa (mDeBERTa, Albertina) masks attention with a float32 minimum that overflows under bf16 autocast;
+    # FP32_CHECKPOINTS names them and is also part of their cache key
+    amp = dev == "cuda" and checkpoint not in {CHECKPOINTS[k] for k in FP32_CHECKPOINTS}
+    if dev == "cuda" and not amp:
+        torch.set_float32_matmul_precision("high")  # TF32 matmuls for the fp32 path
     n_marks = len(train_marks[0]) if train_marks else 0
     assert not n_marks or eval_marks is not None, "trained with marks but no eval marks"
     width = enc.config.hidden_size * (1 + n_marks)
@@ -131,7 +139,7 @@ def fit_predict(train_texts, y_train, eval_texts: dict, *, labels, seed, lr, epo
         b = tok(list(texts), padding=True, truncation=True, max_length=hp["max_len"],
                 return_offsets_mapping=True, return_tensors="pt")
         spans = b.pop("offset_mapping")
-        with torch.autocast(dev, dtype=torch.bfloat16, enabled=dev == "cuda"):
+        with torch.autocast(dev, dtype=torch.bfloat16, enabled=amp):
             h = enc(**{k: v.to(dev) for k, v in b.items()}).last_hidden_state
         parts = [h[:, 0]]
         for j in range(n_marks):
