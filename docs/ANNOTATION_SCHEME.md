@@ -201,3 +201,45 @@ What differs from the other files, and how it was handled:
 - **Position** has more non-final clauses (12 of 95) than the Violeta batch, and includes the only two non-final
   `Post` rows in Portuguese (`PTEUJ17`, `PTEUJ90`).
 - **No agreement figure** (see above).
+
+## Annotator review (October 2026)
+
+Thirty clauses from the Violeta and Abergaria batches were sent back to the annotators
+(`docs/annotator_review.xlsx`). They were chosen because the best encoder (`marked_feat`, out of fold) disagreed
+with the coded relation with high confidence, then shown in corpus order with the coded position, tense, aspect
+classes and relation, and **without** the model's reading. They could keep the relation (*Agree*), give another
+one, or mark the clause *Unsure*, and name a cue to fix.
+
+| Outcome | Rows |
+|---|---|
+| Relation kept, nothing changed | 15 |
+| Relation kept, an aspect class fixed | 2 (`PTEUV33`, `PTMZV39`) |
+| Relation changed | 9 (Ant to Post: 1, Ant to Simul: 4, Simul to Ant: 1, Simul to Post: 1, Post to Simul: 2); four of them also had an aspect class fixed |
+| Unsure | 4 (`PTEUJ30`, `PTEUJ39`, `PTEUJ76`, `PTAOV13`) |
+
+In all, 6 aspect classes were fixed (4 participial clause, 2 main clause).
+
+For `PTEUJ30` and `PTEUJ39` the annotators note that the sentence alone does not give the relation, and that the
+original annotators looked the information up online: those two labels rest on knowledge outside the text.
+
+`experiments/00_ingest.py` converts the workbook to `data/raw/annotator_review.csv` (the new value where the
+annotators changed one, and the value they were shown, `*_was`). `io.load(reviewed=True)` applies it and adds a
+`review` column (`confirmed`, `changed`, `unsure`, blank); it stops if the export no longer holds the value the
+annotators were shown. **The default is still the original export**, because every table, encoder cache and
+paired contrast so far uses it. Switch the default only when the GPU work is redone, since encoder folds trained
+on one label version cannot be compared with B3 fitted on the other.
+
+Read the correction with two caveats:
+
+- **Selection.** Only rows where a model disagreed were reviewed, so the corrected labels are more consistent with
+  the cues by construction. B3 fitted on the original labels agrees with the original label on 1 of the 9 changed
+  rows out of fold, and with the annotators' new label on 8 of 9. Macro-F1 for the same B3 predictions rises from
+  0.695 to 0.703 against the corrected labels (0.705 after refitting); that is a change in the labels, not an
+  improvement of the model, and the 1,008 other rows were not reviewed.
+- **Folds.** Sentence groups do not change, but the folds are stratified on `TR`, so nine changed labels give different
+  folds for every seed. Models must be compared on one label version: B3 and the encoders have to be re-run together.
+- **Anchoring on the cues.** The annotators saw the coded aspect and tense next to the relation, and decide
+  through exactly those cues. Agreement with the cue model after the review is therefore not independent evidence
+  for it.
+
+The four *Unsure* rows keep their labels; use `review == "unsure"` to leave them out as a sensitivity check.

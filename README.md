@@ -61,3 +61,5 @@ second batch of 150 Portuguese sentences (50 each EP, AP, MP; IDs `PTEUV…`, `P
 `data/raw/DADOS_João_Abergaria_PE.xlsx`, converted by the same step after dropping three duplicates. `io.load`
 reads all three and adds a `batch` column. The later batches have no `SR-SC` annotation; see
 [the annotation scheme](docs/ANNOTATION_SCHEME.md#later-annotation-batches).
+`io.load(reviewed=True)` applies the annotators' corrections to 30 clauses (`data/raw/annotator_review.csv`; opt-in, see
+[the review](docs/ANNOTATION_SCHEME.md#annotator-review-october-2026)).

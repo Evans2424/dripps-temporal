@@ -1,6 +1,7 @@
 """Convert the later annotation batches to the pipeline's export format.
 
 * data/raw/archive/Dados_Violeta.xlsx -> data/raw/dripps_violeta.csv (PT-EU/AO/MZ)
+* docs/annotator_review.xlsx -> data/raw/annotator_review.csv (the annotators' answers on 30 clauses; see ``review``)
 * data/raw/DADOS_João_Abergaria_PE.xlsx -> data/raw/dripps_abergaria.csv (EP only):
   one sheet, a different column layout, its own tense spellings, no DR/SR-SC, and
   a connector column that is "N/A" throughout. Rows whose sentence already exists in
@@ -124,6 +125,50 @@ def abergaria(z: zipfile.ZipFile) -> None:
     print(f"{ABERGARIA_SRC.name}: {n} rows -> PTEUJ1..PTEUJ{n}; wrote {ABERGARIA_OUT.relative_to(ROOT)}")
 
 
+REVIEW_SRC = ROOT / "docs/annotator_review.xlsx"
+REVIEW_OUT = ROOT / "data/raw/annotator_review.csv"
+# "Other cue to fix" is free text ("Part. clause=CP", "Main clause=CP"); the left side names the column
+CUE_FIELDS = (("ATSC", re.compile(r"part\w*\.?\s*clause", re.I)), ("ATMC", re.compile(r"main\s*clause", re.I)))
+
+
+def review(z: zipfile.ZipFile) -> None:
+    """The annotators' answers to docs/annotator_review.xlsx -> data/raw/annotator_review.csv.
+
+    One row per reviewed clause: ``status`` (confirmed / changed / unsure), the new value of TR, ATMC or ATSC
+    where the annotators changed it (blank otherwise), and the value they were shown (``*_was``), which
+    ``io.load(reviewed=True)`` checks against the export before it changes anything."""
+    strings = ["".join(t.text or "" for t in si.iter(f"{M}t"))
+               for si in ET.fromstring(z.read("xl/sharedStrings.xml")).iter(f"{M}si")]
+    out = []
+    for c in _cells(z, _sheet_paths(z)["Review"], strings):
+        if not c.get("B", "").startswith("PT"):
+            continue  # header row and the "Reviewed" counter under the table
+        decision, cue = c.get("I", "").strip(), c.get("J", "").strip()
+        rec = {schema.ID: c["B"], "TR": "", "ATMC": "", "ATSC": "", "TR_was": c["H"], "ATMC_was": c["F"], "ATSC_was": c["G"],
+               "comment": " ".join(c.get("K", "").split())}
+        if decision in schema.TR_LABELS and decision != c["H"]:
+            rec["TR"] = decision
+        elif decision not in (*schema.TR_LABELS, "Agree", "Unsure"):
+            raise SystemExit(f"{c['B']}: unknown decision {decision!r}")
+        if cue and decision == "Unsure":
+            raise SystemExit(f"{c['B']}: marked Unsure but also asks to fix {cue!r}; decide with the annotators before applying")
+        if cue.count("=") > 1:
+            raise SystemExit(f"{c['B']}: several cue fixes in one cell ({cue!r}); split them before applying")
+        if cue:
+            col, code = next(((col, m.group(0)) for col, pat in CUE_FIELDS if (m := pat.match(cue))), (None, None))
+            new = cue.split("=")[-1].strip()
+            if col is None or "=" not in cue or new not in schema.ASPECT_LABELS:
+                raise SystemExit(f"{c['B']}: cannot read the cue fix {cue!r}")
+            if new != rec[f"{col}_was"]:
+                rec[col] = new
+        rec["status"] = "unsure" if decision == "Unsure" else "changed" if rec["TR"] or rec["ATMC"] or rec["ATSC"] else "confirmed"
+        out.append(rec)
+    cols = [schema.ID, "status", "TR", "ATMC", "ATSC", "TR_was", "ATMC_was", "ATSC_was", "comment"]
+    pd.DataFrame(out, columns=cols).to_csv(REVIEW_OUT, index=False)
+    print(f"{REVIEW_SRC.name}: {len(out)} reviewed -> {pd.Series([r['status'] for r in out]).value_counts().to_dict()}; "
+          f"wrote {REVIEW_OUT.relative_to(ROOT)}")
+
+
 def main() -> None:
     z = zipfile.ZipFile(SRC)
     strings = ["".join(t.text or "" for t in si.iter(f"{M}t"))
@@ -150,6 +195,8 @@ def main() -> None:
     print(f"wrote {OUT.relative_to(ROOT)}")
     if ABERGARIA_SRC.exists():  # the committed CSV is enough on a clone without the workbook
         abergaria(zipfile.ZipFile(ABERGARIA_SRC))
+    if REVIEW_SRC.exists():
+        review(zipfile.ZipFile(REVIEW_SRC))
 
 
 if __name__ == "__main__":
