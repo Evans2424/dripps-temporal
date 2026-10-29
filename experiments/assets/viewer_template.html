@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>DRIPPS Cue Hierarchy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -299,6 +300,32 @@ function classLegend(classes) {
 
 /* ---------- sections ---------------------------------------------------- */
 const S = {};
+
+S.progress = () => {
+  const P = D.progress, frag = document.createDocumentFragment();
+  const cols = (a, b) => [
+    {key: "name", label: "Experiment"}, {key: "setup", label: a},
+    {key: "result", label: b[0]}, {key: "conclusion", label: b[1]},
+    {key: "direction", label: "Linguistic direction"}];
+  const block = (title, status, sub, rows, c) => {
+    const pn = panel(title, sub, tableOf(c, rows));
+    pn.querySelector("h3").appendChild(el("span", {class: "chip " + status[0], text: status[1],
+      style: "margin-left:10px;vertical-align:middle"}));
+    return pn;
+  };
+  frag.appendChild(block("Completed", ["muted dot", "done"],
+    "Each row is one question, the number that answers it, and what we take from it. Intervals are 95%, from resampling sentence groups.",
+    P.done, cols("What was run", ["Result", "Conclusion"])));
+  frag.appendChild(block("Running", ["zero", "running"],
+    "Exploratory: added after the decision rules were fixed, so no single interval is evidence on its own.",
+    P.running, cols("Design", ["Comparison", "Question"])));
+  frag.appendChild(block("Planned", ["muted", "next"], "",
+    P.planned, [{key: "name", label: "Step"}, {key: "setup", label: "Content"},
+      {key: "direction", label: "Linguistic question"}]));
+  frag.appendChild(el("div", {class: "note", html:
+    "<strong>Reading the evidence.</strong> " + P.note}));
+  return frag;
+};
 
 S.hierarchy = () => {
   const frag = document.createDocumentFragment();
@@ -682,6 +709,7 @@ S.methods = () => {
 
 /* ---------- shell ------------------------------------------------------- */
 const SECTIONS = [
+  ["progress",     "Summary",        "now"],
   ["hierarchy",    "Cue hierarchy",  "RQ1"],
   ["ladder",       "Model ladder",   "B0–B5"],
   ["tree",         "Decision tree",  "d=3"],
@@ -693,6 +721,7 @@ const SECTIONS = [
 ];
 
 const HEAD = {
+  progress: ["Summary", "What has been run, what it shows so far, what is running, and what comes next."],
   hierarchy: ["Cue hierarchy", "Which cue blocks the temporal relation actually depends on, measured two ways because neither alone is sound when the cues are collinear."],
   ladder: ["Model ladder", "Each rung asks whether the next one earns its place."],
   tree: ["Decision tree", "The shallow tree exists to be read, not to win on macro-F1."],
@@ -735,7 +764,7 @@ document.getElementById("stamp").append(
   el("span", {text: `${m.n_total} corpus rows → ${m.n_rows} analysed`}));
 
 const tiles = el("div", {class: "tiles"});
-const best = D.baselines.filter(r => !/^circular \(/.test(r.model))
+const best = D.baselines.filter(r => !/^circular/.test(r.model))
   .sort((a, b) => b.macro_f1 - a.macro_f1)[0];
 const topCue = D.cue_importance.slice()
   .sort((a, b) => b.importance_ablation - a.importance_ablation)[0];
@@ -751,7 +780,7 @@ const zero = D.cue_importance.filter(r =>
   el("div", {class: "s", text: s})])));
 document.querySelector(".masthead").after(tiles);
 
-let start = "hierarchy";
+let start = "progress";
 try {
   const saved = localStorage.getItem("dripps.tab");
   if (saved && HEAD[saved]) start = saved;

@@ -23,7 +23,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from dripps import features, interpret, io, models, results, schema  # noqa: E402
+from dripps import features, interpret, io, models, progress, results, schema  # noqa: E402
 
 TEMPLATE = ROOT / "experiments/assets/viewer_template.html"
 OUT = ROOT / "results/viewer.html"
@@ -188,6 +188,7 @@ def build_payload() -> dict:
             "reference_variety": schema.REFERENCE_VARIETY,
             "seed": int(schema.SEED),
         },
+        "progress": progress.summary(int(len(df))),
         "blocks": {k: list(v) for k, v in features.CUE_BLOCKS.items()},
         "derived": {k: list(v) for k, v in features.DERIVED.items()},
         "cue_importance": _records("cue_importance.csv"),

@@ -9,13 +9,14 @@ models on demand. The static, shareable snapshot is still experiments/06_viewer.
 import streamlit as st
 
 from views import (aspect, corpus_explorer, encoder, errors, exploration, hierarchy, logit, methods,
-                   models_page, overview, shap_page, tree, varieties)
+                   models_page, overview, progress, shap_page, tree, varieties)
 
 st.set_page_config(page_title="DRIPPS cue hierarchy", page_icon=":material/schedule:", layout="wide")
 
 pages = {
     "Start": [
         st.Page(overview.render, title="Overview", icon=":material/home:", url_path="overview", default=True),
+        st.Page(progress.render, title="Project summary", icon=":material/checklist:", url_path="summary"),
         st.Page(corpus_explorer.render, title="Corpus explorer", icon=":material/search:", url_path="corpus"),
     ],
     "Data": [

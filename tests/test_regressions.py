@@ -370,7 +370,7 @@ def test_adjusted_class_probabilities_are_distributions_and_move_only_aspect(df)
 # --- the Streamlit explorer: every page must render against the real tables ---
 
 @pytest.mark.parametrize("page", [
-    "overview", "corpus_explorer", "exploration", "models_page", "logit", "tree",
+    "overview", "progress", "corpus_explorer", "exploration", "models_page", "logit", "tree",
     "hierarchy", "aspect", "shap_page", "varieties", "encoder", "errors", "methods",
 ])
 def test_app_page_renders_without_exception(page):
