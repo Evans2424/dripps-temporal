@@ -14,3 +14,8 @@ data/processed/*
 results/viewer.html
 .claude 
 results/cache_encoder/
+results/cache_decision/
+# lab copies and working notes, not part of the release
+results_bertimbau/
+run_logs.txt
+questions.txt

@@ -9,3 +9,5 @@ spacy>=3.7
 tiktoken
 sentencepiece
 protobuf
+# device_map="auto" and FP8 checkpoints (decision step, Qwen3.x-FP8) need it
+accelerate
