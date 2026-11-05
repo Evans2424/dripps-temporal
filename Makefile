@@ -1,6 +1,6 @@
 PY := .venv/bin/python
 
-.PHONY: all ingest test audit baselines hierarchy varieties hierarchical encoder encoder-feat encoder-more decision explain viewer app clean
+.PHONY: all ingest test audit baselines hierarchy varieties hierarchical encoder encoder-feat encoder-more decision jev explain viewer app clean
 
 all: ingest test audit baselines hierarchy varieties hierarchical explain viewer
 
@@ -47,6 +47,11 @@ decision:
 	$(PY) experiments/10_decision.py --model qwen3.6-27b-fp8
 	$(PY) experiments/10_decision.py --model qwen3.5-9b
 	$(PY) experiments/10_decision.py --model qwen3.5-4b
+
+# T5 on TypeSafe's Jev API (needs TYPESAFE_API_KEY and internet, no GPU; ~19k requests, well under $1).
+# Version pinned: a new Jev release gets its own --name, never mixed into this cache.
+jev:
+	$(PY) experiments/10_decision.py --engine http --url https://api.typesafe.ai/v1/systemone --name jev-1.14 --id jev-1.14.0
 
 explain:
 	$(PY) experiments/05_explain.py
