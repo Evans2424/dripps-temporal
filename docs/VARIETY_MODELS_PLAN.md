@@ -1,7 +1,7 @@
 # RQ2 pre-registration: does a model's training variety matter?
 
-**Status:** written 2026-11-05, before any grid model was run. **Frozen at commit:** `________` (fill in before the
-full runs; nothing below changes after that commit).
+**Status:** written 2026-11-05, before any grid model was run. **Frozen at commit:** `79301d4` (main, 2026-11-05), before any grid model ran (nothing below changes after
+that commit; the protocol code is the code of that commit).
 
 ## Question
 
