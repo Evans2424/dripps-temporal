@@ -1,0 +1,3 @@
+model,clauses_in_mixed_cells,mixed_cells,cell_reading_pairs,mean_gap,share_positive,model_right_b3_wrong,of_which_post_simul,agreement_with_b3
+Jev 1.14,893,39,96,0.2675,0.9062,186,107,0.5231
+Qwen3.8-27B,893,39,96,0.1924,0.8333,143,71,0.5116
