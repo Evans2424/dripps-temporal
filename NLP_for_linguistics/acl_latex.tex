@@ -1,0 +1,491 @@
+\documentclass[11pt]{article}
+
+% Change "review" to "final" to generate the final (sometimes called camera-ready) version.
+% Change to "preprint" to generate a non-anonymous version with page numbers.
+\usepackage[review]{acl}
+
+% Standard package includes
+\usepackage{times}
+\usepackage{latexsym}
+
+% For proper rendering and hyphenation of words containing Latin characters (including in bib files)
+\usepackage[T1]{fontenc}
+% For Vietnamese characters
+% \usepackage[T5]{fontenc}
+% See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
+
+% This assumes your files are encoded as UTF8
+\usepackage[utf8]{inputenc}
+
+% This is not strictly necessary, and may be commented out,
+% but it will improve the layout of the manuscript,
+% and will typically save some space.
+\usepackage{microtype}
+
+% This is also not strictly necessary, and may be commented out.
+% However, it will improve the aesthetics of text in
+% the typewriter font.
+\usepackage{inconsolata}
+
+%Including images in your LaTeX document requires adding
+%additional package(s)
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{multirow}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,calc}
+\definecolor{cAnt}{HTML}{8F4E15}
+\definecolor{cPost}{HTML}{4C4B9E}
+\definecolor{cSimul}{HTML}{0E7C7B}
+% placeholders for experiments still running; must be gone before submission
+\newcommand{\pending}[1]{\textcolor{red}{\textbf{[PENDING: #1]}}}
+
+% If the title and author information does not fit in the area allocated, uncomment the following
+%
+%\setlength\titlebox{<dim>}
+%
+% and set <dim> to something 5cm or larger.
+
+\title{Which Cues Matter? Computational Evidence on Temporal Interpretation\\ in Portuguese Perfect Participial Clauses}
+
+% Author information can be set in various styles:
+% For several authors from the same institution:
+% \author{Author 1 \and ... \and Author n \\
+%         Address line \\ ... \\ Address line}
+% if the names do not fit well on one line use
+%         Author 1 \\ {\bf Author 2} \\ ... \\ {\bf Author n} \\
+% For authors from different institutions:
+% \author{Author 1 \\ Address line \\  ... \\ Address line
+%         \And  ... \And
+%         Author n \\ Address line \\ ... \\ Address line}
+% To start a separate ``row'' of authors use \AND, as in
+% \author{Author 1 \\ Address line \\  ... \\ Address line
+%         \AND
+%         Author 2 \\ Address line \\ ... \\ Address line \And
+%         Author 3 \\ Address line \\ ... \\ Address line}
+
+\author{First Author \\
+  Affiliation / Address line 1 \\
+  Affiliation / Address line 2 \\
+  Affiliation / Address line 3 \\
+  \texttt{email@domain} \\\And
+  Second Author \\
+  Affiliation / Address line 1 \\
+  Affiliation / Address line 2 \\
+  Affiliation / Address line 3 \\
+  \texttt{email@domain} \\}
+
+%\author{
+%  \textbf{First Author\textsuperscript{1}},
+%  \textbf{Second Author\textsuperscript{1,2}},
+%  \textbf{Third T. Author\textsuperscript{1}},
+%  \textbf{Fourth Author\textsuperscript{1}},
+%\\
+%  \textbf{Fifth Author\textsuperscript{1,2}},
+%  \textbf{Sixth Author\textsuperscript{1}},
+%  \textbf{Seventh Author\textsuperscript{1}},
+%  \textbf{Eighth Author \textsuperscript{1,2,3,4}},
+%\\
+%  \textbf{Ninth Author\textsuperscript{1}},
+%  \textbf{Tenth Author\textsuperscript{1}},
+%  \textbf{Eleventh E. Author\textsuperscript{1,2,3,4,5}},
+%  \textbf{Twelfth Author\textsuperscript{1}},
+%\\
+%  \textbf{Thirteenth Author\textsuperscript{3}},
+%  \textbf{Fourteenth F. Author\textsuperscript{2,4}},
+%  \textbf{Fifteenth Author\textsuperscript{1}},
+%  \textbf{Sixteenth Author\textsuperscript{1}},
+%\\
+%  \textbf{Seventeenth S. Author\textsuperscript{4,5}},
+%  \textbf{Eighteenth Author\textsuperscript{3,4}},
+%  \textbf{Nineteenth N. Author\textsuperscript{2,5}},
+%  \textbf{Twentieth Author\textsuperscript{1}}
+%\\
+%\\
+%  \textsuperscript{1}Affiliation 1,
+%  \textsuperscript{2}Affiliation 2,
+%  \textsuperscript{3}Affiliation 3,
+%  \textsuperscript{4}Affiliation 4,
+%  \textsuperscript{5}Affiliation 5
+%\\
+%  \small{
+%    \textbf{Correspondence:} \href{mailto:email@domain}{email@domain}
+%  }
+%}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+Portuguese perfect participial clauses (\textit{tendo} + participle) look like perfects but are read as posterior to their main clause more often than as anterior. We ask which contextual cues carry this temporal reading and whether models that read the raw sentence rely on the same cues. On 1,038 annotated clauses from four Portuguese varieties, interventional analyses of a cue-based classifier rank main-clause aspect and tense above clause position, while the participial clause's own aspect is dispensable; the cues combine additively. Four fine-tuned encoders, including two Portuguese ones, at best match the cue model. Zero-shot LLMs, once corrected for option-order bias and calibrated, come close to the cue model (an open 27B model is statistically indistinguishable from it) and, combined with it, add to it (+0.043 macro-F1 for that model, +0.037 for a commercial decision model), while relying on the cues differently, most strongly on clause order. The varieties differ in their distribution of readings rather than in demonstrable cue weights, and zero-shot LLMs are weakest on the Angolan and Mozambican varieties, which we will test with variety-specific Portuguese LLMs.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+Portuguese adverbial perfect participial clauses combine the auxiliary \textit{tendo} with a past participle. Their form is that of a compound perfect, yet their temporal relation to the main clause varies freely (Figure~\ref{fig:examples}).
+
+\begin{figure}[t]
+\centering\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}l@{\hspace{4pt}}>{\raggedright\arraybackslash\hyphenpenalty=10000\exhyphenpenalty=10000}p{5.15cm}@{\hspace{6pt}}c@{}}
+\toprule
+& Example & Reading \\
+\midrule
+(a) & \textit{Em 1730, teve início uma nova construção, \textbf{tendo ficado inacabada}.} & \textcolor{cPost}{\textsc{Post}} \\
+& `A new building was begun in 1730, \textbf{and was left unfinished}.' & $e_M \prec e_P$ \\[4pt]
+(b) & \textit{Foi duas vezes vereador de Salvador, \textbf{tendo sido eleito} pela primeira vez em 1988.} & \textcolor{cAnt}{\textsc{Ant}} \\
+& `He was twice a councillor in Salvador, \textbf{having first been elected} in 1988.' & $e_P \prec e_M$ \\[4pt]
+(c) & \textit{[\ldots] estudou em escolas católicas, \textbf{tendo sido acólito} na igreja.} & \textcolor{cSimul}{\textsc{Simul}} \\
+& `[\ldots] he studied at Catholic schools, \textbf{serving as an altar boy} in the church.' & $e_P \circ e_M$ \\
+\bottomrule
+\end{tabular}
+\caption{One construction, three readings. The participial clauses (bold) share their form (\textit{tendo} + participle), their final position and the simple past of the main clause, yet the participial situation $e_P$ follows (a), precedes (b) or overlaps (c) the main-clause situation $e_M$ ($\prec$: precedes; $\circ$: overlaps). Corpus examples (a, b: Brazilian; c: European Portuguese).}
+\label{fig:examples}
+\end{figure}
+
+The three clauses share the construction, its position and the main-clause tense, and still receive three different readings. Across the 1,038 Portuguese clauses we study, the \emph{posterior} reading, the least expected for a perfect, is the most frequent (42\%), ahead of simultaneity (33\%) and anteriority (25\%). The reading is therefore not carried by the form: it has to be recovered from context.
+
+Linguistic accounts name several contextual cues: the aspectual class and tense of the main clause, the position of the participial clause, connectors, and the participial clause's own aspect \citep{lobo2003,silvano2021apc}. Because these cues co-occur, their marginal associations cannot tell which of them carries the reading, and which merely travels with one that does. Separating them is a modelling question, and one that calls for interventions (removing, masking or displacing a cue) rather than correlations alone \citep{belinkov-2022-probing,elazar-etal-2021-amnesic}. Aspectual type has already been used as a feature for Portuguese temporal relation classification \citep{costa-branco-2012-aspectual}; what is missing is a hierarchy of cues for a construction whose reading its morphology leaves open.
+
+A second question follows from the first. If expert-annotated cues explain part of the variation, does a model that reads the raw sentence recover them, ignore them, or find more? Fine-tuned encoders and zero-shot large language models (LLMs) answer this differently: the former learn only from our labelled data, the latter bring knowledge from pretraining. LLMs are increasingly used as annotators and linguistic informants \citep{gilardi2023chatgpt,begus2025large}, but their multiple-choice answers carry option-order bias and miscalibration \citep{zheng2024selection,guo2017calibration}, which must be controlled before their probabilities can be compared with a cue model's.
+
+Finally, Portuguese is pluricentric. LLM training data is dominated by Brazilian Portuguese \citep{ferreira2026p3b3}, European Portuguese evaluation is only now catching up \citep{vieira2026alba}, and African varieties have barely been studied \citep{alves-etal-2024-african}. Whether cue--reading associations, and the models that rely on them, behave alike across European (EP), Brazilian (BP), Angolan (AP) and Mozambican (MP) Portuguese is open.
+
+We therefore ask:
+\textbf{RQ1}: What is the relative contribution of main-clause aspect and tense, clause position, connector presence and participial-clause aspect to the temporal reading, and do models that read the text rely on the same cues?
+\textbf{RQ2}: Do cue--reading associations, and model performance, differ across EP, BP, AP and MP once each variety's distribution of readings is taken into account, and does a model's training variety matter?
+
+Our contributions are threefold. (i) An interventional cue hierarchy: main-clause aspect and tense dominate, position follows, and the participial clause's own aspect is dispensable; the cues combine additively. (ii) A comparison of three model families on the same folds: four fine-tuned encoders at best \emph{match} the cue model (CueLR, a logistic regression on the annotated cues), whereas zero-shot LLMs, once debiased for option order and calibrated, come close to it (the open 27B model is statistically indistinguishable) and, averaged with it, \emph{add} to it (+0.043 macro-F1 for an open 27B model), evidence that they carry temporal information the cue inventory does not encode. They also weight the cues differently from the corpus, relying more on clause order. (iii) A variety-aware evaluation: the four varieties differ in their base rates but show no demonstrable difference in cue weights, and zero-shot LLMs, unlike the cue model, are weakest on the African varieties. We also design a training-variety by test-variety comparison of Portuguese LLMs, whose results are \pending{to be added (\S\ref{sec:varieties})}.
+
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{Temporal relations.} Temporal relation classification grew out of TimeML-annotated resources; annotation schemes that anchor relations on event start points raised agreement substantially \citep{ning-etal-2018-multi}, and LLM benchmarks now probe temporal reasoning broadly, with GPT-4 still well below humans \citep{wang-zhao-2024-tram}. For Portuguese, TimeBankPT adapted the TempEval data \citep{costa-branco-2012-timebankpt}, and aspectual type has been used as a feature for relation classification \citep{costa-branco-2012-aspectual}. We study a single construction whose reading is not fixed by its morphology, and ask which cues carry it, using interventions rather than feature gains.
+
+\paragraph{LLMs as annotators and informants.} LLMs can rival crowd workers as zero-shot annotators \citep{gilardi2023chatgpt} and produce metalinguistic analyses \citep{begus2025large}. In multiple-choice formats they prefer some option positions regardless of content \citep{zheng2024selection,pezeshkpour2024order}, and their probabilities are poorly calibrated \citep{guo2017calibration,zhao2021calibrate}. We neutralise position bias by construction and calibrate on training folds only \citep{kull2019dirichlet}. Following the distinction between what a representation encodes and what a model uses \citep{belinkov-2022-probing,elazar-etal-2021-amnesic}, we contrast the cue weights a model's \emph{answers} imply (cue strength) with those the corpus supports (cue validity).
+
+\paragraph{Portuguese models and varieties.} Portuguese encoders include BERTimbau \citep{souza2020bertimbau} and Albertina \citep{rodrigues2023albertina}, the latter in European and Brazilian versions. Generative models now exist for each side: Gervásio in PT-PT and PT-BR versions \citep{santos2024gervasio}, AMALIA for European Portuguese \citep{simplicio2026amalia}, and Sabiá, Tucano and Bode for Brazilian Portuguese \citep{pires2023sabia,correa2024tucano,garcia2024bode}, alongside multilingual European models \citep{martins2024eurollm,gonzalezagirre2025salamandra}. Most LLMs favour Brazilian Portuguese \citep{ferreira2026p3b3}, motivating European Portuguese benchmarks \citep{vieira2026alba}; for African varieties, a perplexity study found PT-PT encoders closer than PT-BR ones \citep{alves-etal-2024-african}. Cross-dialect work in English documents systematic drops on non-standard varieties \citep{ziems-etal-2023-multi}. Whether a model's training variety affects a \emph{semantic} judgement, such as temporal interpretation, has not been tested.
+
+\section{Data and Task}
+\label{sec:data}
+
+We use the Portuguese part of DRIPPS \citep{silvano2023dripps}: 1,038 adverbial perfect participial clauses from newswire in four varieties, each annotated for its temporal relation to the main clause (\textsc{Ant}, \textsc{Post}, \textsc{Simul}) and for candidate cues (Table~\ref{tab:data}). The varieties differ sharply in their base rates: \textsc{Post} dominates in Angolan and Mozambican Portuguese, \textsc{Ant} in Brazilian Portuguese. A British English subset (95\% \textsc{Ant}) serves only as a contrast and is not modelled.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{lrrrr}
+\toprule
+Variety & $n$ & \textsc{Ant} & \textsc{Post} & \textsc{Simul} \\
+\midrule
+European (EP) & 345 & 28 & 40 & 32 \\
+Brazilian (BP) & 193 & 48 & 20 & 32 \\
+Angolan (AP) & 250 & 18 & 53 & 29 \\
+Mozambican (MP) & 250 & 11 & 50 & 39 \\
+\midrule
+All & 1,038 & 25 & 42 & 33 \\
+\bottomrule
+\end{tabular}
+\caption{Clauses per variety and distribution of readings (\%).}
+\label{tab:data}
+\end{table}
+
+\paragraph{Cues.} The annotation yields 17 binary features in six blocks: main-clause aspect (dynamic, durative, telic; after \citealp{moens-steedman-1988-temporal}), main-clause tense and grammatical aspect (7 features), position of the participial clause (final vs.\ non-final), presence of a connector, participial-clause aspect (3), and two interaction terms (both clauses telic; both durative). Two annotated layers, the discourse relation and the semantic role of the participial clause, encode the reading itself and are excluded by construction.
+
+\paragraph{Evaluation.} All models are evaluated out of fold with 5-fold cross-validation stratified by reading and grouped by sentence (several clauses can share a sentence; 1,017 sentences), repeated over five seeds. We report macro-F1. Intervals are 95\% percentile bootstrap intervals over sentence groups, and model comparisons are paired differences computed on the same resamples; fold-to-fold spread is not used as an error bar \citep{varoquaux2018}.
+
+\section{Models and Probes}
+\label{sec:models}
+
+\subsection{Cue models}
+\label{sec:cuemodels}
+Our reference model, \textbf{CueLR}, is a multinomial logistic regression on the 17 cues, standardised on each training fold: $P(r \mid \mathbf{x}) \propto \exp(\mathbf{w}_r^{\top}\mathbf{x} + b_r)$ for each reading $r$, with an L2 penalty ($C = 1$). It gives one signed weight per cue and reading, which makes it the natural model for a hierarchy claim, and it is the yardstick for every other model: encoders and LLMs are evaluated on CueLR's folds and seeds, so all comparisons with it are paired. We test whether its additivity costs anything against a ladder of baselines: the majority class, a one-rule classifier that predicts from the single best cue \citep{holte1993}, a CART decision tree (depth 4, at least 20 clauses per leaf), a random forest (1,000 trees; \citealp{breiman2001}) and gradient-boosted trees (400 trees of depth 3; \citealp{chen2016}). Cue importance is measured per block by \emph{refit ablation} (drop the block, refit, measure the fall in macro-F1), which tests whether the model \emph{needs} the cue, and by permutation of the block in held-out folds, which tests how much the fitted model \emph{relies} on it; derived interaction terms are recomputed after each shuffle. For the tree ensembles, path-dependent TreeSHAP \citep{lundberg2020} attributes predictions to blocks.
+
+\subsection{Fine-tuned encoders}
+We fine-tune xlm-roberta-base \citep{conneau2020xlmr}, BERTimbau (PT-BR), Albertina-100M (PT-PT) and mDeBERTa-v3 \citep{he2023debertav3} on the sentence alone (\emph{plain}), or with the participial verb group and the main verb marked in the text (\emph{marked}), pooling the vectors at both verbs. Learning rate and epochs are chosen inside each training fold; the folds are those of CueLR, so every comparison is paired. Variants that also feed the cues to the encoder are reported in Appendix~\ref{app:encoders}.
+
+\subsection{Zero-shot decisions from LLMs}
+\label{sec:t5}
+A model reads the sentence, the question \emph{when did the participial clause's situation happen, relative to the main clause's?}, and the three readings as options A--C (Appendix~\ref{app:prompts}). It generates no text: the prompt ends where the next token must be a letter, and the softmax over the three letter logits gives one probability per reading in a single forward pass. To cancel option-order bias, each clause is scored under the three cyclic orders of the options, so that every reading occupies every slot once, and the three distributions are combined by their geometric mean; a constant slot preference then cancels exactly. These \emph{raw} probabilities use no labels. A \emph{calibrated} variant fits a 12-parameter multinomial logit on the log-probabilities of each training fold (Dirichlet calibration; \citealp{kull2019dirichlet}). Finally, \emph{CueLR + LLM} averages CueLR's and the calibrated LLM's probabilities with equal weight, fixed before any run.
+
+We run open Qwen models at 4B, 9B and 27B (two releases, FP8) with pinned revisions; the 27B Qwen3.8 model is the headline set in advance. As a secondary comparison we query Jev 1.14 \citep{typesafe2026jev}, a commercial model that its provider describes as trained for calibrated decisions, through its API with the same sentences, question and option orders. \pending{OpenJev \citep{openjev2026}, a decision-tuned version of the same Qwen3.8-27B, scored through the same readout as its base, isolates the effect of decision tuning (\S\ref{sec:llm})}.
+
+\subsection{Probes: what do models rely on?}
+\label{sec:probes}
+\textbf{Masking.} We mask the participle (943 clauses with an identifiable participle), the main verb (660) and explicit temporal adverbials (356), each against a control that masks the same number of random words, and measure the change in the probability of the gold reading. \textbf{Displacement.} We move a final participial clause to the front of the sentence (437 clauses) and measure the change in $P(\textsc{Ant})$. \textbf{Cue strength.} We refit CueLR on a model's out-of-fold \emph{answers} instead of the gold labels and compare each block's share of the absolute coefficients with the gold refit: the gold refit measures cue validity, the answer refit the cue strength the model's behaviour implies. \pending{Identical-cue test: within groups of clauses with identical 17-cue vectors, whether a model ranks the gold reading above chance (AUC against a within-group permutation null), and incremental validity of the LLM's log-probabilities as extra features of CueLR.}
+
+\subsection{Varieties}
+\label{sec:var-method}
+The \emph{variety model} is a pooled multinomial logit over the four varieties with three nested levels: cues (M0), plus variety intercepts (M1), plus variety-by-cue slopes (M2) whose deviations are L2-penalised (partial pooling), with the penalty chosen by inner cross-validation. Terms are tested by deviance drops with parametric-bootstrap $p$-values, Holm-corrected over the six cue blocks. We also break down every model's macro-F1 by variety. \textbf{Variety-matched models.} We apply the zero-shot protocol of \S\ref{sec:t5}, with the Portuguese prompt, to models that differ only in training variety: Gervásio-7B PT-PT vs.\ PT-BR \citep{santos2024gervasio} (same base, recipe and size) and, fine-tuned as in \S\ref{sec:models}, Albertina-100m PT-PT vs.\ PT-BR \citep{rodrigues2023albertina}. Two pre-registered contrasts per pair are a matching advantage, $[F_1(\text{PT},\text{EP})-F_1(\text{BR},\text{EP})]-[F_1(\text{PT},\text{BP})-F_1(\text{BR},\text{BP})]>0$, and African transfer, $F_1(\text{PT},\text{AP}{\cup}\text{MP})-F_1(\text{BR},\text{AP}{\cup}\text{MP})>0$, with a paired sentence-group bootstrap and Holm correction over the four tests; a pair is tested only if both models are above uniform guessing. As a manipulation check we compare each LLM's per-token negative log-likelihood of the sentences by variety. With 193--345 clauses per variety the matching contrast can detect only large effects (about 0.17 macro-F1 for the LLM pair, 0.09 for the encoders), so a null result there is inconclusive. AMALIA and Gervásio-8B (PT-PT), Bode, Sabiá and Tucano (PT-BR), and EuroLLM, Salamandra and Qwen3.5-9B (multilingual) are compared descriptively. \pending{results}
+
+\section{Results}
+\label{sec:results}
+
+\subsection{The cue hierarchy}
+\label{sec:hierarchy}
+\paragraph{Additivity.} CueLR reaches 0.695 macro-F1, far above the majority and one-rule baselines (Table~\ref{tab:ladder}). The single best cue, main-clause durativity, already reaches 0.442, but the hierarchy beyond it matters. Neither the random forest nor gradient boosting improves on CueLR, although both can exploit interactions between cues; the cues combine additively. The decision tree scores lower but is informative: its first split is main-clause durativity, followed by clause position and present tense, so it recovers the top of the hierarchy without being told.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{lr}
+\toprule
+Model & Macro-F1 [95\% CI] \\
+\midrule
+Majority class & 0.196 [0.186, 0.206] \\
+One-rule (best single cue) & 0.442 [0.424, 0.463] \\
+\textbf{CueLR} (logistic regression) & \textbf{0.695} [0.665, 0.725] \\
+Decision tree (depth 4) & 0.649 [0.616, 0.682] \\
+Random forest & 0.692 [0.662, 0.722] \\
+Gradient-boosted trees & 0.695 [0.665, 0.724] \\
+\bottomrule
+\end{tabular}
+\caption{Cue-based models on the 17 annotated cues. For reference, adding the two excluded layers that encode the reading (discourse relation, semantic role) gives 0.750, against 0.736 for CueLR on the same subset.}
+\label{tab:ladder}
+\end{table}
+
+\paragraph{Which cues matter.} Refit ablation and permutation agree on the order of every block they share (Table~\ref{tab:hierarchy}): main-clause aspect and tense come first, position third, and only these three blocks have intervals that exclude zero. Dropping the participial clause's aspect, which also removes both interaction terms, leaves the score unchanged ($-0.007$, $[-0.022, 0.008]$). This null result is not an artefact of the cue's distribution: the feature varies widely (durative in 466 clauses, telic in 797), is associated with the reading on its own, and correlates only weakly with main-clause aspect ($r \le 0.21$ for each primitive). Its signal is real but already carried by the other cues.
+
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{lrcrcc}
+\toprule
+ & & & & \multicolumn{2}{c}{SHAP rank} \\
+\cmidrule(lr){5-6}
+Block & Abl. & 95\% CI & Perm. & RF & GBT \\
+\midrule
+MC aspect & 0.093 & [0.066, 0.122] & 0.155 & 1 & 2 \\
+MC tense & 0.057 & [0.034, 0.081] & 0.124 & 2 & 1 \\
+Position & 0.031 & [0.013, 0.050] & 0.064 & 4 & 4 \\
+Connector & 0.008 & [$-$0.001, 0.018] & 0.020 & 6 & 6 \\
+Interactions & $-$0.004 & [$-$0.014, 0.006] & --- & 3 & 5 \\
+PC aspect & $-$0.007 & [$-$0.022, 0.008] & 0.016 & 5 & 3 \\
+\bottomrule
+\end{tabular}
+\caption{Cue-block importance (MC: main clause; PC: participial clause). Abl.: fall in CueLR macro-F1 when the block is removed and the model refit. Perm.: fall when the block is permuted in held-out folds (undefined for the derived interaction terms). SHAP rank: block rank by mean absolute TreeSHAP value in the random forest (RF) and gradient-boosted trees (GBT).}
+\label{tab:hierarchy}
+\end{table}
+
+\paragraph{Reading the measures together.} The four measures answer different questions, and where they disagree the disagreement is informative. All four put main-clause aspect and tense on top: together they account for 64\% of the forest's and 60\% of the boosted trees' SHAP mass. Three disagreements remain. (i) The connector has some of the largest coefficients (Table~\ref{tab:coef}) yet the smallest ablation effect: it is decisive where it occurs, but it occurs in only 45 clauses (34 of them Brazilian) and is collinear with fronting, so removing it costs little. (ii) The boosted trees rank participial-clause aspect third, whereas ablation shows that CueLR does not need it: Shapley values share credit among correlated features \citep{aas2021}, and the refit shows that the shared credit is redundant. (iii) The forest ranks the interaction terms third because its splits pick up the product features that the additive model obtains from the main effects. Ablation is the measure we use for the hierarchy; the others confirm its top and explain its tail.
+
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrr}
+\toprule
+Cue & \textsc{Ant} & \textsc{Post} & \textsc{Simul} \\
+\midrule
+MC durative & $-$0.12 & $-$0.31 & \textbf{+0.43} \\
+MC telic & \textbf{+0.34} & +0.05 & \textbf{$-$0.39} \\
+MC dynamic & $-$0.33 & +0.03 & +0.30 \\
+MC present tense & \textbf{+0.68} & \textbf{$-$0.57} & $-$0.11 \\
+MC perfect & \textbf{$-$0.40} & +0.21 & +0.19 \\
+Non-final position & \textbf{+0.58} & \textbf{$-$0.55} & $-$0.03 \\
+Connector & +0.51 & \textbf{$-$0.73} & +0.22 \\
+PC durative & +0.31 & $-$0.18 & $-$0.13 \\
+Both clauses durative & $-$0.13 & $-$0.14 & +0.27 \\
+\bottomrule
+\end{tabular}
+\caption{Selected CueLR coefficients (per standard deviation of the cue, fitted on all clauses). MC: main clause; PC: participial clause. All 17 cues in Appendix~\ref{app:coef}.}
+\label{tab:coef}
+\end{table}
+
+\paragraph{Direction of the effects.} The coefficients point where the literature predicts (Table~\ref{tab:coef}). A durative main clause pulls towards simultaneity (+0.43) and a telic one away from it ($-0.39$) and towards anteriority (+0.34): the participial event is read as overlapping an extended main situation, and as preceding a bounded one. Tense acts independently of aspect: a present-tense main clause strongly favours anteriority (+0.68) at the expense of posteriority ($-0.57$), whereas a perfect main clause disfavours anteriority ($-0.40$). Fronting favours anteriority (+0.58) and all but excludes posteriority ($-0.55$): 67 of the 80 fronted clauses are anterior and only two posterior. The participial clause's own durativity points towards anteriority, but, as the ablation shows, adds nothing once the main clause is known.
+
+\subsection{Fine-tuned encoders match the cues but do not add to them}
+\label{sec:encoders}
+From the raw sentence, three of the four encoders stay below CueLR, with paired intervals that exclude zero; mDeBERTa's interval includes it (Table~\ref{tab:encoders}). Marking the two verbs closes the gap: all four marked encoders are statistically indistinguishable from CueLR, although BERTimbau stays lowest ($-0.036$, $[-0.075, 0.002]$). None of them adds to CueLR: averaging an encoder with CueLR never yields an interval above zero. Portuguese pretraining, whether European (Albertina) or Brazilian (BERTimbau), gives no advantage over the multilingual models.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{lrrr}
+\toprule
+Encoder & Plain & Marked & CueLR + marked \\
+\midrule
+xlm-roberta-base & 0.621$^{-}$ & 0.691 & +0.004 \\
+BERTimbau (PT-BR) & 0.652$^{-}$ & 0.658 & $-$0.010 \\
+Albertina (PT-PT) & 0.625$^{-}$ & 0.693 & +0.013 \\
+mDeBERTa-v3 & 0.664 & 0.698 & +0.018 \\
+\midrule
+CueLR (cues) & \multicolumn{3}{l}{0.695 [0.665, 0.725]} \\
+\bottomrule
+\end{tabular}
+\caption{Encoder macro-F1 on the sentence text. $^{-}$: paired interval against CueLR below zero. Last column: gain of the equal-weight average with CueLR over CueLR alone (no interval excludes zero).}
+\label{tab:encoders}
+\end{table}
+
+\subsection{Zero-shot LLMs add to the cues}
+\label{sec:llm}
+Table~\ref{tab:llm} shows the decision models. The two small Qwen models answer \textsc{Ant} for about 98\% of clauses whatever the option order, a label prior that leaves their raw macro-F1 (0.16) below that of uniform random guessing ($\approx 0.33$) and close to the majority baseline (0.196); calibration removes the prior and lifts them to 0.48 and 0.58. The bias disappears with scale: both 27B models use all three readings. Calibration recovers most of the distance to CueLR: the calibrated Qwen3.8-27B is statistically indistinguishable from it ($-0.027$, $[-0.064, 0.011]$). Its newer release is better raw than Qwen3.6-27B ($+0.069$) but not once both are calibrated ($+0.008$, interval including zero), so the release mainly changes how biased the raw answers are. Jev, trained for decisions, is the best model raw (0.628, $+0.068$ over Qwen3.8-27B) and changes little under calibration.
+
+\begin{table*}[t]
+\centering\small
+\begin{tabular}{lrrrrr}
+\toprule
+Model & Raw & Calibrated & CueLR + model & Gain over CueLR & Orders agree \\
+\midrule
+Qwen3.5-4B & 0.157 & 0.478 & 0.707 & +0.012 [$-$0.007, 0.031] & 98\% \\
+Qwen3.5-9B & 0.162 & 0.583 & 0.722 & \textbf{+0.027} [0.008, 0.046] & 96\% \\
+Qwen3.6-27B & 0.490 & 0.660 & 0.726 & \textbf{+0.031} [0.008, 0.052] & 68\% \\
+Qwen3.8-27B (headline) & 0.560 & 0.668 & 0.738 & \textbf{+0.043} [0.018, 0.068] & 63\% \\
+Jev 1.14 (commercial) & 0.628 & 0.632 & 0.732 & \textbf{+0.037} [0.014, 0.059] & 90\% \\
+\pending{Qwen3.8-27B via shim} & --- & --- & --- & --- & --- \\
+\pending{OpenJev-27B via shim} & --- & --- & --- & --- & --- \\
+\midrule
+CueLR (cues) & \multicolumn{5}{l}{0.695 [0.665, 0.725]} \\
+\bottomrule
+\end{tabular}
+\caption{Zero-shot decision models (plain text). Raw: no labels. Calibrated: 12-parameter logit fitted on training folds. CueLR + model: equal-weight average, fixed in advance; gain is the paired difference with CueLR. Orders agree: share of clauses whose top reading is the same under all three option orders.}
+\label{tab:llm}
+\end{table*}
+
+The central result is in the fourth column. The confirmatory comparison, fixed before the runs, is the headline Qwen3.8-27B: averaged with the cue model it gains $+0.043$ ($[0.018, 0.068]$). The other rows are exploratory and uncorrected for multiplicity, but point the same way: every LLM from 9B upwards improves on the cue model, by up to +0.043 macro-F1 with intervals above zero, for open and commercial models alike. No fine-tuned encoder does (\S\ref{sec:encoders}). Since the average uses a weight fixed before the runs, the gain is not an artefact of tuning; it indicates that the LLMs' errors, and hence their information, differ from the cues'. CueLR and Qwen3.8-27B agree on only 51\% of clauses.
+
+\subsection{Beyond the inventory: what LLMs rely on}
+\label{sec:beyond}
+The LLMs do not weight the cues as the corpus does (Table~\ref{tab:strength}). Refit on their answers, CueLR gives clause position nearly twice its gold weight in every large model (19--22\% of the coefficient mass against 11\%) and main-clause aspect about half (8--14\% against 23\%). Displacement shows the same preference directly: moving the participial clause to the front raises $P(\textsc{Ant})$ by 0.48--0.62 in the large LLMs, against 0.36 for the fine-tuned encoder. Order of mention is a valid cue in the corpus, where fronted clauses are 84\% anterior, but the LLMs rely on it far more strongly than its validity warrants; \pending{whether fronting actually changes native readings is being tested on a relabelled sample}. Masking the main verb lowers the probability of the gold reading more than masking the participle, net of random-word controls, for every Qwen model (e.g.\ $-0.037$, $[-0.056, -0.020]$ for Qwen3.8-27B) and for the encoder ($-0.031$, $[-0.048, -0.015]$), in line with the hierarchy of \S\ref{sec:hierarchy}; for Jev the two are indistinguishable.
+
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrr}
+\toprule
+ & Position & MC aspect & $\rho$ & Fronting \\
+\midrule
+Gold labels (validity) & 11\% & 23\% & --- & --- \\
+Qwen3.6-27B & 22\% & 14\% & 0.61 & +0.48 \\
+Qwen3.8-27B & 20\% & 12\% & 0.66 & +0.62 \\
+Jev 1.14 & 19\% & 8\% & 0.50 & +0.58 \\
+Encoder (xlm-r) & --- & --- & --- & +0.36 \\
+\bottomrule
+\end{tabular}
+\caption{Cue strength vs.\ validity. Share of CueLR's absolute coefficients on a block when refit on the model's answers (gold: on the labels); $\rho$: Spearman correlation of the full coefficient vectors with the gold refit; Fronting: change in $P(\textsc{Ant})$ when the participial clause is moved to the front (437 clauses; all intervals exclude zero).}
+\label{tab:strength}
+\end{table}
+
+If the LLMs only re-weighted the annotated cues, they could not separate clauses that share all 17 of them. They do. Among the 893 clauses whose cue vector is shared with a clause of another reading (39 groups), Qwen3.8-27B gives a reading on average 0.19 more probability on the clauses that have it than on those that do not, positive in 83\% of the 96 group-by-reading pairs (Jev: 0.27, 91\%; the two values use each model's raw probabilities and are not directly comparable), a distinction no cue-only model can make. \pending{Formal test with a within-cell permutation null and intervals, and incremental validity of the LLM log-probabilities in CueLR (\S\ref{sec:probes}).} About half of the clauses an LLM gets right and CueLR gets wrong are confusions between \textsc{Post} and \textsc{Simul} (Qwen3.8-27B: 71 of 143; Jev: 107 of 186), which often hinge on what the events are and how they are dated (e.g.\ a sequence of years in the main clause), information that the aspectual classes do not encode.
+
+\subsection{Varieties}
+\label{sec:varieties}
+In the pooled variety model, variety intercepts improve fit clearly (deviance drop 34.2 on 6 df, $p = .003$), whereas variety-by-cue slopes do so only marginally as a whole ($p = .033$) and no single cue block survives correction (smallest Holm-adjusted $p = .30$). Out of fold, the slope model does not beat the intercept model (0.700 vs.\ 0.704). The varieties thus differ in how often each reading occurs, but a difference in how they weight the cues is not demonstrable at this sample size.
+
+The breakdown by variety (Table~\ref{tab:varieties}) shows a pattern the pooled tests cannot: zero-shot LLMs are weakest on the Angolan and Mozambican varieties (Qwen3.8-27B raw: 0.475 on AP against 0.578 on EP), where the cue model, trained on all four varieties, is strongest (0.730 on AP). Calibration on the pooled folds narrows but does not close this gap. Among the encoders, the Brazilian-pretrained BERTimbau is not better than the European-pretrained Albertina even on Brazilian Portuguese (0.679 vs.\ 0.697), so pretraining variety shows no advantage for fine-tuned encoders; the intervals per variety are wide (Appendix~\ref{app:varieties}), and these contrasts are descriptive. \pending{Model-by-variety results for variety-matched LLMs and encoders (\S\ref{sec:var-method}).}
+
+\begin{table}[t]
+\centering\small
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{lrrrr}
+\toprule
+Model & EP & BP & AP & MP \\
+\midrule
+CueLR (cues) & 0.648 & 0.650 & 0.730 & 0.696 \\
+Enc.\ xlm-r (marked) & 0.658 & 0.706 & 0.705 & 0.617 \\
+Enc.\ Albertina PT-PT & 0.675 & 0.697 & 0.683 & 0.642 \\
+Enc.\ BERTimbau PT-BR & 0.627 & 0.679 & 0.643 & 0.574 \\
+Qwen3.8-27B raw & 0.578 & 0.625 & 0.475 & 0.524 \\
+Qwen3.8-27B calibr. & 0.675 & 0.692 & 0.650 & 0.593 \\
+Jev raw & 0.628 & 0.691 & 0.597 & 0.554 \\
+CueLR + Qwen3.8-27B & 0.704 & 0.739 & 0.763 & 0.700 \\
+\midrule
+\pending{Gervásio PT-PT / PT-BR} & & & & \\
+\pending{AMALIA / Tucano / Bode} & & & & \\
+\pending{EuroLLM / Salamandra} & & & & \\
+\bottomrule
+\end{tabular}
+\caption{Macro-F1 by variety, out of fold, averaged over seeds (descriptive; 95\% sentence-bootstrap intervals in Appendix~\ref{app:varieties}). CueLR's per-clause probabilities are recovered exactly from the saved CueLR + LLM averages. $n$ = 345 / 193 / 250 / 250.}
+\label{tab:varieties}
+\end{table}
+
+\section{Discussion}
+\label{sec:discussion}
+Three model families converge on the same core hierarchy: whatever reads the annotated cues, the fine-tuned text, or the LLMs' answers, the main clause matters more than the participial one. They diverge on what lies beyond it. A thousand labelled clauses are enough for an encoder to recover what the cues encode, but not to learn more; pretraining at scale supplies information that complements the inventory, and does so whether or not the model was trained for decisions. That information comes with a different weighting of the cues, high reliance on order of mention, which the corpus supports less strongly than the models assume. For annotation schemes, this suggests a hypothesis: the missing cues are lexical, namely the meaning of the verbs and explicit dating, which the aspectual classes abstract away. For the varieties, the gap of zero-shot models on African Portuguese mirrors their training data rather than the grammar, since the cue model shows no such gap.
+
+\section*{Limitations}
+Inter-annotator agreement is not available for the later annotation batches, which also score lower under CueLR (0.60 against 0.72 on the original rows); some of the variation we model may be annotator variation. Per-variety samples are small (193--345), so variety-specific estimates are descriptive, and the varieties' texts may differ in topic and genre (e.g.\ sports and institutional news with dated sequences), which could explain part of both their base rates and the LLMs' variety gap. The data are newswire. We have no judgements from untrained native speakers, so the zero-shot scores cannot yet be placed against a human reference; \pending{a native-speaker baseline per variety} is planned. The displacement probe keeps the original label, although fronting may change the reading. The masking probe inserts the encoder's mask token, which is out of distribution for generative models; \pending{deletion-based masking} addresses this. Jev is a closed, versioned commercial model whose training is not documented, so it serves only as a comparison: every central claim rests on open models. Apart from the pre-set headline rows, the comparisons are exploratory and not corrected for multiplicity; \pending{a pre-registered robustness plan} specifies the confirmatory tests.
+
+\section*{Ethics Statement}
+The corpus consists of published news text. Sentences, but no annotations, were sent to a commercial API (Jev), whose provider states that it does not train on customer data. OpenJev weights are licensed CC BY-NC 4.0 and used for research only. We will release code, tables and the LLM probability caches. AI assistants were used for coding and for drafting text; all analyses were run, checked and interpreted by the authors.
+
+%\section*{Acknowledgments}
+
+
+
+
+\bibliography{custom}
+
+\appendix
+
+\section{Encoder variants}
+\label{app:encoders}
+Exploratory variants on xlm-roberta-base give the encoder access to the cues: concatenated to the text vector with their own learning rate (\emph{feat}; marked: 0.702), as a correction to CueLR's log-odds (\emph{res}; plain 0.702, marked 0.696), written as words before the sentence (\emph{txt}; 0.668, 0.677) or as auxiliary training targets (\emph{aux}; 0.667, 0.697). None differs from CueLR with an interval that excludes zero.
+
+\section{All CueLR coefficients}
+\label{app:coef}
+\begin{table}[h]
+\centering\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrr}
+\toprule
+Cue & \textsc{Ant} & \textsc{Post} & \textsc{Simul} \\
+\midrule
+Non-final position & 0.58 & $-$0.55 & $-$0.03 \\
+Connector & 0.51 & $-$0.73 & 0.22 \\
+MC dynamic & $-$0.33 & 0.03 & 0.30 \\
+MC durative & $-$0.12 & $-$0.31 & 0.43 \\
+MC telic & 0.34 & 0.05 & $-$0.39 \\
+PC dynamic & 0.10 & 0.07 & $-$0.17 \\
+PC durative & 0.31 & $-$0.18 & $-$0.13 \\
+PC telic & 0.14 & $-$0.09 & $-$0.05 \\
+MC present & 0.68 & $-$0.57 & $-$0.11 \\
+MC future & 0.25 & $-$0.12 & $-$0.13 \\
+MC non-finite & 0.01 & $-$0.02 & 0.01 \\
+MC perfective & $-$0.17 & 0.16 & 0.01 \\
+MC progressive & $-$0.13 & 0.07 & 0.06 \\
+MC perfect & $-$0.40 & 0.21 & 0.19 \\
+MC irrealis & $-$0.01 & 0.03 & $-$0.02 \\
+Both telic & $-$0.10 & 0.11 & $-$0.01 \\
+Both durative & $-$0.13 & $-$0.14 & 0.27 \\
+\bottomrule
+\end{tabular}
+\caption{CueLR coefficients for all 17 cues (standardised features, fitted on all 1,038 clauses).}
+\end{table}
+
+\section{Prompt and readout}
+\label{app:prompts}
+\small
+\texttt{The sentence below is Portuguese and contains a participial clause introduced by 'tendo'. Relative to the situation of the main clause, when did the situation of the participial clause happen?}\\
+\texttt{Sentence: <sentence>}\\
+\texttt{A. Before the situation of the main clause}\\
+\texttt{B. After the situation of the main clause}\\
+\texttt{C. At the same time as, or overlapping with, the situation of the main clause}\\
+\texttt{Answer with the letter only.}
+\normalsize
+
+\noindent The chat template is applied with thinking disabled and the assistant turn begins with \texttt{Answer:}; letter probabilities are read from one forward pass. For Jev, the same question is the \texttt{instructions} of a Choice question, the sentence the \texttt{state}, and the readings the criteria, named \texttt{before}, \texttt{after} and \texttt{same\_time}.
+
+\section{Per-variety results with intervals}
+\label{app:varieties}
+\begin{table}[h]
+\centering\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{lcccc}
+\toprule
+Model & EP & BP & AP & MP \\
+\midrule
+CueLR (cues) & [0.60, 0.69] & [0.57, 0.71] & [0.67, 0.78] & [0.63, 0.75] \\
+Enc.\ xlm-r (marked) & [0.61, 0.70] & [0.64, 0.76] & [0.65, 0.76] & [0.55, 0.68] \\
+Enc.\ Albertina PT-PT & [0.63, 0.71] & [0.64, 0.75] & [0.63, 0.73] & [0.58, 0.70] \\
+Enc.\ BERTimbau PT-BR & [0.58, 0.67] & [0.61, 0.74] & [0.59, 0.70] & [0.50, 0.64] \\
+Qwen3.8-27B raw & [0.52, 0.63] & [0.54, 0.70] & [0.41, 0.54] & [0.46, 0.58] \\
+Qwen3.8-27B calibr. & [0.62, 0.73] & [0.62, 0.76] & [0.59, 0.71] & [0.52, 0.66] \\
+Jev raw & [0.57, 0.68] & [0.61, 0.76] & [0.53, 0.66] & [0.48, 0.62] \\
+CueLR + Qwen3.8-27B & [0.65, 0.75] & [0.67, 0.80] & [0.71, 0.82] & [0.63, 0.76] \\
+\bottomrule
+\end{tabular}
+\caption{95\% sentence-bootstrap intervals for Table~\ref{tab:varieties} (1,000 draws; \texttt{experiments/11\_variety\_breakdown.py}).}
+\label{tab:varieties-ci}
+\end{table}
+
+\end{document}

@@ -23,6 +23,8 @@ ORIGINAL_RAW = ROOT / "data/raw/dripps_full.csv"
 VIOLETA_RAW = ROOT / "data/raw/dripps_violeta.csv"
 #: Third batch (EP only), converted by the same script (IDs carry a "J").
 ABERGARIA_RAW = ROOT / "data/raw/dripps_abergaria.csv"
+#: The annotators' answers on 30 clauses (docs/annotator_review.xlsx), converted by experiments/00_ingest.py.
+REVIEW_RAW = ROOT / "data/raw/annotator_review.csv"
 
 
 _TAGGED_ID = rf"^PT[A-Z]{{2}}([{''.join(schema.BATCH_BY_TAG)}])\d+$"
@@ -84,7 +86,7 @@ def _variety(series: pd.Series) -> pd.DataFrame:
     )
 
 
-def load(path: str | Path | None = None, *, strict: bool = True) -> pd.DataFrame:
+def load(path: str | Path | None = None, *, strict: bool = True, reviewed: bool = False) -> pd.DataFrame:
     """Load the export (all three files by default), validate every label, and
     attach variety metadata.
 
@@ -92,6 +94,10 @@ def load(path: str | Path | None = None, *, strict: bool = True) -> pd.DataFrame
     ``original``), ``variety``, ``language``, ``is_portuguese``, and ``sentence_group``
     (a stable integer id shared by the duplicated rows of multi-APC sentences,
     used as the grouping key for every cross-validation split).
+
+    ``reviewed=True`` applies the annotators' corrections (:data:`REVIEW_RAW`) to the three exports and adds
+    ``review`` (confirmed / changed / unsure / blank). Off by default: every table, cache and paired contrast
+    made so far uses the original labels, and mixing the two would compare models trained on different data.
     """
     paths = [ORIGINAL_RAW, VIOLETA_RAW, ABERGARIA_RAW] if path is None else [path]
     df = pd.concat([_read_unquoted(p) for p in paths], ignore_index=True)
@@ -102,6 +108,11 @@ def load(path: str | Path | None = None, *, strict: bool = True) -> pd.DataFrame
 
     for col in schema.RAW_COLUMNS:
         df[col] = df[col].str.strip()
+
+    if reviewed:
+        if path is not None:
+            raise ValueError("reviewed=True corrects the three bundled exports; do not pass a path")
+        df = apply_review(df)
 
     if strict:
         _validate(df)
@@ -115,6 +126,30 @@ def load(path: str | Path | None = None, *, strict: bool = True) -> pd.DataFrame
     df["sentence_norm"] = df[schema.SENTENCE].map(normalize_text)
     df["sentence_group"] = df.groupby(df["sentence_norm"].map(group_key), sort=False).ngroup()
     return df
+
+
+def apply_review(df: pd.DataFrame, review: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Set the annotators' new TR, ATMC and ATSC values and label every reviewed row in ``review``.
+
+    Each correction carries the value the annotators were shown (``*_was``); if the export no longer has it
+    (the batch was re-ingested, an ID moved) this fails instead of overwriting a different value."""
+    rev = pd.read_csv(REVIEW_RAW, dtype=str, keep_default_na=False) if review is None else review
+    pos = pd.Series(df.index, index=df[schema.ID])
+    unknown = sorted(set(rev[schema.ID]) - set(pos.index))
+    if unknown:
+        raise SchemaError(f"annotator review names IDs that are not in the export: {unknown}")
+    out = df.copy()
+    rows = pos[rev[schema.ID]].to_numpy()
+    out["review"] = ""
+    out.loc[rows, "review"] = rev["status"].to_numpy()
+    for col in (schema.TARGET, "ATMC", "ATSC"):  # the clause must still be the one the annotators saw, changed or not
+        stale = out.loc[rows, col].to_numpy() != rev[f"{col}_was"].to_numpy()
+        if stale.any():
+            raise SchemaError(f"annotator review expects another {col} than the export has for {rev[schema.ID][stale].tolist()}")
+    for col in (schema.TARGET, "ATMC", "ATSC"):
+        ch = rev[rev[col] != ""]
+        out.loc[pos[ch[schema.ID]].to_numpy(), col] = ch[col].to_numpy()
+    return out
 
 
 #: Characters the exporter emits inside sentence text: U+00A0 in 557 sentences

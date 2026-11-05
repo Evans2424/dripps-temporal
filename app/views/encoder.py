@@ -25,8 +25,8 @@ def _tuned() -> bool:
 def _status():
     if _tuned():
         st.success("Tuned run: settings chosen inside each training fold, class-weighted loss, text-only and "
-                   "verb-marked variants (each also with the annotated cues concatenated, where run), "
-                   "B3 + encoder fusion.")
+                   "verb-marked variants (where run, also with the annotated cues concatenated, as a residual on B3, "
+                   "as words, or as an auxiliary target, and on Portuguese checkpoints), B3 + encoder fusion.")
         return
     st.warning("**First run only (fixed settings), shown below.** The tuned run (settings chosen inside each "
                "training fold, verb markers, B3 + encoder fusion) is implemented and tested, but its tables are "
@@ -39,7 +39,7 @@ def _status():
 
 def _t1_chart(t1):
     d = t1[~t1["model"].str.contains("paired") & ~t1["model"].str.contains("text-unambiguous")]
-    base = alt.Chart(d).encode(y=alt.Y("model:N", title=None, sort=None))
+    base = alt.Chart(d, height=18 * len(d)).encode(y=alt.Y("model:N", title=None, sort=None))
     st.altair_chart(base.mark_bar().encode(x=alt.X("macro_f1:Q", title="out-of-fold macro-F1", scale=alt.Scale(domain=[0, 0.8])))
                     + base.mark_rule().encode(x="ci_lo:Q", x2="ci_hi:Q"), width="stretch")
 
@@ -122,7 +122,7 @@ def _demo():
 
 def render():
     st.title("Encoder models (T1, T3)")
-    st.caption("A fine-tuned xlm-roberta-base reads the sentence itself, to test whether the 17 annotated cues "
+    st.caption("A fine-tuned encoder (xlm-roberta-base, and Portuguese checkpoints where run) reads the sentence itself, to test whether the 17 annotated cues "
                "miss anything the text carries (T1) and which parts of the text it uses (T3).")
     t1, t2, t3 = st.tabs(["Status and results", "Architecture and procedure", "Span recovery demo"])
     with t1:

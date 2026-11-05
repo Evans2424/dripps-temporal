@@ -127,7 +127,8 @@ the 660 rows are those where the parser found a single finite root, a selected s
 `t3_span_sample.csv` holds 50 rows with both spans for a hand check of both columns.
 
 **Architecture.** `xlm-roberta-base` (12 layers, 768 dimensions, all weights
-fine-tuned) with a head of dropout (0.1) and one linear layer. Four variants:
+fine-tuned) with a head of dropout (0.1) and one linear layer. Ten variants (the first four are the main
+experiment; the rest are exploratory, see below):
 
 - *plain*: the head sees the first-token vector.
 - *marked*: the text becomes `[[ tendo X ]]` around the APC group and `<< verb >>` around
@@ -152,6 +153,27 @@ fine-tuned) with a head of dropout (0.1) and one linear layer. Four variants:
   encoder gains from the cues; comparing it with B3 asks whether the text adds to them.
   They are not averaged with B3, since they already see the cues. T3 runs on the plain
   text model only.
+- *plain_res*, *marked_res*: the text head learns a correction to B3's log-odds
+  (a product of experts, [clark-etal-2019-dont]) and starts at zero, so the model begins as B3.
+  Training rows get offsets from a B3 fitted without their sentence group, minus the log class
+  prior to match the class-weighted loss; the held-out fold gets its own B3. The inner score that
+  picks lr and epochs is slightly optimistic, because inner-fit offsets come from B3 fits that
+  saw the inner-validation rows (B3 has 17 inputs, so the effect is small).
+- *plain_txt*, *marked_txt*: the cues are written as words in front of the sentence
+  (`aspeto da oração principal: dinâmico, pontual, télico; tempo: ...`), from the Moens and
+  Steedman primitives and the TAM bundle, since codes such as `PIMP-Conj` mean nothing to a
+  pretrained model. The marks move by the prefix length.
+- *plain_aux*, *marked_aux*: the text vector also feeds one small head per cue (both aspects,
+  tense, position, connector), with a loss of weight 0.5 in total. The cues are not an input,
+  so at test time the model sees text only and can still be fused with B3.
+
+The `*_feat`, `*_res` and `*_txt` variants see the cues and are not averaged with B3.
+
+Any variant can run on another checkpoint (`--checkpoint`: `bertimbau`, `bertimbau-large`,
+`albertina`, `albertina-900m` (Portuguese-only, European Portuguese), `mdeberta`, `xlmr-large`).
+It is named like `marked@bertimbau` and compared with the same variant on xlm-roberta-base.
+T3 stays on the plain xlm-roberta-base model. Pooling at the marks needs a fast tokenizer,
+which the script asserts. Settings are tuned per checkpoint with the same grid.
 
 Training: AdamW (weight decay 0.01), linear schedule with 10% warm-up, batch 16,
 maximum length 256, gradient clipping at 1, bf16 autocast on GPU, cross-entropy
@@ -186,6 +208,8 @@ it needs a Portuguese verb inflector.
 **Decision rules, fixed before the run.** The encoder "recovers the inventory's signal"
 only if its paired difference from B3 includes 0 or is positive. T3 is interpreted
 only if the tuned plain model reaches macro-F1 0.60; below that it is exploratory.
+
+**Exploratory variants.** The decision rules were written for `plain`, `marked`, their `_feat` twins and fusion. The `_res`, `_txt` and `_aux` variants and the other checkpoints were added afterwards, so every contrast involving them is exploratory. No multiplicity correction is applied to the roughly sixty paired intervals, and one interval that excludes 0 among them is not evidence on its own. Read them as candidates to confirm on a held-out batch or a fresh set of seeds.
 
 **Limits.** The encoder is far smaller-data than its pre-training assumes (1,038
 sentences); inner selection uses ~165 validation rows and is noisy; the markers may

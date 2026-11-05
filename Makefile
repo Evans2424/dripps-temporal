@@ -1,6 +1,6 @@
 PY := .venv/bin/python
 
-.PHONY: all ingest test audit baselines hierarchy varieties hierarchical encoder encoder-feat explain viewer app clean
+.PHONY: all ingest test audit baselines hierarchy varieties hierarchical encoder encoder-feat encoder-more decision jev explain viewer app clean
 
 all: ingest test audit baselines hierarchy varieties hierarchical explain viewer
 
@@ -35,6 +35,24 @@ encoder-feat:  # text + annotated cues; run after `make encoder`, tables then co
 	$(PY) experiments/08_encoder.py --variant plain_feat
 	$(PY) experiments/08_encoder.py --variant marked_feat
 
+encoder-more:  # residual / cues-as-text / auxiliary-cue variants, then plain + marked on BERTimbau, Albertina and mDeBERTa
+	$(PY) experiments/08_encoder.py --variant new
+	$(PY) experiments/08_encoder.py --variant both --checkpoint bertimbau
+	$(PY) experiments/08_encoder.py --variant both --checkpoint albertina
+	$(PY) experiments/08_encoder.py --variant both --checkpoint mdeberta
+
+# T5 Jev-style decisions: one model per call (GPU, requirements-neural.txt), tables cover every model cached so far
+decision:
+	$(PY) experiments/10_decision.py --model qwen3.8-27b-fp8
+	$(PY) experiments/10_decision.py --model qwen3.6-27b-fp8
+	$(PY) experiments/10_decision.py --model qwen3.5-9b
+	$(PY) experiments/10_decision.py --model qwen3.5-4b
+
+# T5 on TypeSafe's Jev API (needs TYPESAFE_API_KEY and internet, no GPU; ~19k requests, well under $1).
+# Version pinned: a new Jev release gets its own --name, never mixed into this cache.
+jev:
+	$(PY) experiments/10_decision.py --engine http --url https://api.typesafe.ai/v1/systemone --name jev-1.14 --id jev-1.14.0
+
 explain:
 	$(PY) experiments/05_explain.py
 
@@ -47,6 +65,6 @@ app:
 	.venv/bin/streamlit run app/streamlit_app.py
 
 clean:
-	find results/tables -type f ! -name 't[13]_*' -delete  # t1_/t3_ need a GPU (make encoder); keep them
+	find results/tables -type f ! -name 't[135]_*' -delete  # t1_/t3_/t5_ need a GPU (make encoder, make decision); keep them
 	rm -rf results/figures/* results/viewer.html .pytest_cache
 	find . -name __pycache__ -type d -prune -exec rm -rf {} +

@@ -142,6 +142,74 @@ def test_cache_keys_are_per_variant(monkeypatch):
     assert len(set(before.values())) == 4
 
 
+def test_earlier_cache_keys_are_unchanged_and_new_ones_differ():
+    from dripps import encoder
+
+    kw = dict(texts=["a", "b"], marked=["[[a]]", "b"], perturbed={"mask": ["x", None]},
+              X=np.arange(6.0).reshape(2, 3), labels=["Ant", "Post"], seed=1, library="1")
+    golden = {"plain": "plain_a9061a1bdd", "marked": "marked_b75d8e7d10",
+              "plain_feat": "plain_feat_c86dd33526", "marked_feat": "marked_feat_000915efed"}
+    assert {v: encoder.cache_key(v, **kw) for v in golden} == golden  # the lab's cached folds stay valid
+    keys = {encoder.cache_key(v, **kw, extra=[1]) for v in ("plain_res", "plain_aux", "marked_res", "plain_txt",
+                                                            "plain_res@bertimbau", "plain@bertimbau")}
+    assert len(keys) == 6
+    assert encoder.cache_key("plain@bertimbau", **kw) != encoder.cache_key("plain@albertina", **kw)
+    assert encoder.cache_key("plain_aux", **kw, extra=[1]) != encoder.cache_key("plain_aux", **kw, extra=[2])
+
+
+def test_variant_names_round_trip():
+    from dripps import encoder
+
+    for v, parts in {"plain": ("plain", "", "xlmr"), "marked_feat": ("marked", "feat", "xlmr"),
+                     "plain_res@bertimbau": ("plain", "res", "bertimbau"), "marked@albertina": ("marked", "", "albertina")}.items():
+        assert encoder.parse(v) == parts and encoder.name(*parts) == v
+
+
+def test_offsets_and_auxiliary_targets_follow_their_rows_through_selection():
+    from dripps import encoder
+
+    labels = ["Ant", "Post", "Simul"]
+    y = np.array(labels * 40)
+    g = np.arange(120) // 2
+    texts = [str(i) for i in range(120)]
+    idx = np.arange(120, dtype=float)
+    off, aux = np.repeat(idx[:, None], 3, 1), idx[:, None]
+    train, test = next(iter(evaluate.folds(y, g, 3)))
+    seen = []
+
+    def fake_fit(tr, y_tr, ev, *, labels, seed, lr, epochs, train_marks=None, eval_marks=None, train_feats=None,
+                 eval_feats=None, train_off=None, eval_off=None, train_aux=None, aux_sizes=()):
+        seen.append(all(int(t) == o[0] == a[0] for t, o, a in zip(tr, train_off, train_aux)) and
+                    all(int(t) == o[0] for t, o in zip(next(iter(ev.values())), next(iter(eval_off.values())))))
+        return {k: np.full((len(t), 3), 1 / 3) for k, t in ev.items()}
+
+    encoder.select_and_predict([texts[i] for i in train], y[train], g[train], {"orig": [texts[i] for i in test]},
+                               labels=labels, seed=3, configs=[dict(lr=3e-5, epochs=1)], fit=fake_fit,
+                               train_off=off[train], eval_off={"orig": off[test]}, train_aux=aux[train], aux_sizes=[1])
+    assert seen == [True, True]
+
+
+def test_fit_predict_with_offsets_and_auxiliary_heads_runs():
+    import pytest
+    pytest.importorskip("torch")
+    pytest.importorskip("transformers")
+    from dripps import encoder
+
+    labels = ["Ant", "Post", "Simul"]
+    texts = [f"ele saiu, tendo feito {w}." for w in "abcdefgh"]
+    y = np.array(labels * 3)[:8]
+    off = np.zeros((8, 3)); off[:, 0] = 5.0  # a strong prior for Ant that the zero-initialised head keeps at first
+    aux = np.array([[0, 1], [1, -1]] * 4)
+    try:
+        p = encoder.fit_predict(texts, y, {"orig": texts[:3]}, labels=labels, seed=0, lr=1e-9, epochs=1,
+                                train_off=off, eval_off={"orig": off[:3]}, train_aux=aux, aux_sizes=[2, 2], warmup=0.0,
+                                checkpoint="hf-internal-testing/tiny-xlm-roberta", batch_size=4)
+    except OSError:
+        pytest.skip("tiny checkpoint not available offline")
+    assert p["orig"].shape == (3, 3) and np.allclose(p["orig"].sum(1), 1)
+    assert np.allclose(p["orig"][:, 0], np.exp(5) / (np.exp(5) + 2), atol=1e-3)  # the head starts at the offset
+
+
 def test_fit_predict_with_features_runs_and_checks_its_inputs():
     import pytest
     pytest.importorskip("torch")

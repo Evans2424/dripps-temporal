@@ -14,3 +14,22 @@ data/processed/*
 results/viewer.html
 .claude 
 results/cache_encoder/
+results/cache_decision/
+# lab copies and working notes, not part of the release
+results_bertimbau/
+run_logs.txt
+questions.txt
+pass.txt
+.env
+# Slurm job logs and LaTeX build outputs (the paper's PDF is kept in paper/)
+logs/
+NLP_for_linguistics/*.aux
+NLP_for_linguistics/*.bbl
+NLP_for_linguistics/*.blg
+NLP_for_linguistics/*.fdb_latexmk
+NLP_for_linguistics/*.fls
+NLP_for_linguistics/*.log
+NLP_for_linguistics/*.out
+NLP_for_linguistics/acl_latex.pdf
+# RQ2 tables are written only once the variety grid has run
+results/tables/t8_*.csv

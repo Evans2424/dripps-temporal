@@ -32,7 +32,7 @@ make all
 | `src/dripps/hierarchical.py` | B6 helpers: one-hot partial pooling, bootstrap LRT, block weights |
 | `src/dripps/interpret.py` | block ablation/permutation importance, coefficients, tree rules and structure |
 | `src/dripps/explain.py` | TreeSHAP for the two ensemble rungs |
-| `src/dripps/encoder.py`, `ablate.py` | T1/T3: tuned xlm-roberta fine-tuning (plain and verb-marked), and the text perturbations for the ablation. Needs a GPU: `make encoder` (text-only and verb-marked) and `make encoder-feat` (the same with the annotated cues concatenated), with `requirements-neural.txt`; not part of `make all` |
+| `src/dripps/encoder.py`, `ablate.py` | T1/T3: tuned xlm-roberta fine-tuning (plain and verb-marked), and the text perturbations for the ablation. Needs a GPU: `make encoder` (text-only and verb-marked), `make encoder-feat` (the same with the annotated cues concatenated) and `make encoder-more` (other ways to use the cues, and Portuguese checkpoints), with `requirements-neural.txt`; not part of `make all` |
 | `experiments/` | `00_ingest` (later batches, xlsx → csv) `01_audit` `02_baselines` `03_cue_hierarchy` `04_variety_hierarchies` `05_explain` `06_viewer` `07_hierarchical` `08_encoder` (GPU) |
 | `docs/` | [plan](docs/PROJECT_PLAN.md) · [scheme](docs/ANNOTATION_SCHEME.md) · [audit](docs/DATA_AUDIT.md) · [findings](docs/FINDINGS.md) · [linguistics](docs/LINGUISTICS.md) · [methods](docs/methods.md) · [deploy](docs/DEPLOY.md) · [refs](docs/references.bib) |
 | `results/viewer.html` | generated dashboard — `make viewer`, then open it in a browser |
@@ -61,3 +61,5 @@ second batch of 150 Portuguese sentences (50 each EP, AP, MP; IDs `PTEUV…`, `P
 `data/raw/DADOS_João_Abergaria_PE.xlsx`, converted by the same step after dropping three duplicates. `io.load`
 reads all three and adds a `batch` column. The later batches have no `SR-SC` annotation; see
 [the annotation scheme](docs/ANNOTATION_SCHEME.md#later-annotation-batches).
+`io.load(reviewed=True)` applies the annotators' corrections to 30 clauses (`data/raw/annotator_review.csv`; opt-in, see
+[the review](docs/ANNOTATION_SCHEME.md#annotator-review-october-2026)).

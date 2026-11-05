@@ -1,0 +1,33 @@
+model,variety,n,macro_f1,ci_lo,ci_hi
+B3 logit (annotated cues),EP,345,0.648,0.5959,0.6949
+B3 logit (annotated cues),BP,193,0.65,0.57,0.7127
+B3 logit (annotated cues),AP,250,0.7304,0.6657,0.7823
+B3 logit (annotated cues),MP,250,0.696,0.6259,0.7546
+encoder marked (xlm-roberta-base),EP,345,0.6583,0.6135,0.6976
+encoder marked (xlm-roberta-base),BP,193,0.7057,0.642,0.7633
+encoder marked (xlm-roberta-base),AP,250,0.705,0.6532,0.7575
+encoder marked (xlm-roberta-base),MP,250,0.617,0.549,0.6807
+encoder marked@albertina (PT-PT),EP,345,0.6747,0.63,0.7136
+encoder marked@albertina (PT-PT),BP,193,0.6971,0.6376,0.7516
+encoder marked@albertina (PT-PT),AP,250,0.6833,0.6316,0.7304
+encoder marked@albertina (PT-PT),MP,250,0.6416,0.5775,0.698
+encoder marked@bertimbau (PT-BR),EP,345,0.627,0.5796,0.6691
+encoder marked@bertimbau (PT-BR),BP,193,0.679,0.6119,0.7447
+encoder marked@bertimbau (PT-BR),AP,250,0.643,0.5879,0.696
+encoder marked@bertimbau (PT-BR),MP,250,0.5739,0.5023,0.6364
+Qwen3.8-27B raw,EP,345,0.5779,0.5203,0.6306
+Qwen3.8-27B raw,BP,193,0.6246,0.5417,0.6992
+Qwen3.8-27B raw,AP,250,0.4755,0.4119,0.5357
+Qwen3.8-27B raw,MP,250,0.5237,0.4597,0.5826
+Qwen3.8-27B calibrated,EP,345,0.6749,0.623,0.7259
+Qwen3.8-27B calibrated,BP,193,0.6918,0.6174,0.7607
+Qwen3.8-27B calibrated,AP,250,0.6496,0.5908,0.7118
+Qwen3.8-27B calibrated,MP,250,0.5926,0.5158,0.6607
+Jev 1.14 raw,EP,345,0.6277,0.5729,0.6789
+Jev 1.14 raw,BP,193,0.6911,0.6112,0.7643
+Jev 1.14 raw,AP,250,0.5972,0.5341,0.6551
+Jev 1.14 raw,MP,250,0.5536,0.4846,0.6225
+B3 + Qwen3.8-27B calibrated,EP,345,0.7044,0.651,0.7528
+B3 + Qwen3.8-27B calibrated,BP,193,0.7386,0.6673,0.8024
+B3 + Qwen3.8-27B calibrated,AP,250,0.7626,0.7077,0.818
+B3 + Qwen3.8-27B calibrated,MP,250,0.6997,0.6347,0.7631
