@@ -44,9 +44,84 @@ spec.loader.exec_module(e08)  # 08 imports torch and spaCy lazily, so this is li
 #: name used in the tables -> Hugging Face id. The first is the headline. FP8 because 27B in bf16 (about 54 GB) does not fit a 40 GB GPU.
 MODELS = {"qwen3.8-27b-fp8": "Qwen/Qwen3.8-27B-FP8", "qwen3.6-27b-fp8": "Qwen/Qwen3.6-27B-FP8",
           "qwen3.5-9b": "Qwen/Qwen3.5-9B", "qwen3.5-4b": "Qwen/Qwen3.5-4B", "qwen3.5-0.8b": "Qwen/Qwen3.5-0.8B"}
+#: RQ2 grid: Portuguese LLMs that differ mainly in training variety, plus multilingual controls. All run with the
+#: Portuguese template 2 (docs/VARIETY_MODELS_PLAN.md); confirmatory pair: the two Gervásio-7B models.
+VARIETY_MODELS = {
+    "gervasio-7b-ptpt-t2": "PORTULAN/gervasio-7b-portuguese-ptpt-decoder",
+    "gervasio-7b-ptbr-t2": "PORTULAN/gervasio-7b-portuguese-ptbr-decoder",
+    "gervasio-8b-ptpt-t2": "PORTULAN/gervasio-8b-portuguese-ptpt-decoder",
+    "amalia-9b-t2": "amalia-llm/AMALIA-9B-0626-DPO",
+    "bode-7b-t2": "recogna-nlp/bode-7b-alpaca-pt-br-no-peft",
+    "sabia-7b-t2": "maritaca-ai/sabia-7b",
+    "tucano-2b4-t2": "TucanoBR/Tucano-2b4-Instruct",
+    "eurollm-9b-t2": "utter-project/EuroLLM-9B-Instruct",
+    "salamandra-7b-t2": "BSC-LT/salamandra-7b-instruct",
+    "qwen3.5-9b-t2": "Qwen/Qwen3.5-9B",
+}
 MASK = "<mask>"  # what the encoder run's perturbations used (the XLM-R mask token)
 TEXTS = ["plain", "marked", *e08.VARIANTS]
 N_SEEDS = e08.N_SEEDS
+
+
+def server_version(url: str, tries: int = 5, pause: float = 10.0) -> dict | None:
+    """GET <origin>/v1/version of an open decision server (OpenJev's shim answers it). None only when the server
+    answers that it has no such endpoint (404 or a non-object); a slow or unreachable server raises after ``tries``,
+    so a hiccup is never recorded as "no version" (which would make the next resume refuse the cache)."""
+    import http.client
+    import time
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+    u = urllib.parse.urlsplit(url)
+    for attempt in range(tries):
+        try:
+            with urllib.request.urlopen(f"{u.scheme}://{u.netloc}/v1/version", timeout=30) as r:
+                v = json.loads(r.read())
+            return {k: v.get(k) for k in ("model_dir", "T", "noul_t", "noul_bias", "flags", "shim_sha256")} \
+                if isinstance(v, dict) else None
+        except urllib.error.HTTPError as e:
+            if e.code in (404, 405, 501):
+                return None
+            err = e
+        except (OSError, ValueError, http.client.HTTPException) as e:
+            err = e
+        if attempt < tries - 1:
+            time.sleep(pause)
+    raise RuntimeError(f"{url}: /v1/version did not answer after {tries} tries: {err!r}")
+
+
+def checkpoint_id(path: Path) -> str:
+    """A local checkpoint's identity: every small file in full, plus the size and the first and last MiB of each
+    large one (the weights). Names and sizes alone are the same for any model of the same shape."""
+    h = hashlib.sha1()
+    for f in sorted(p for p in path.rglob("*") if p.is_file() and ".cache" not in p.parts):
+        n = f.stat().st_size
+        h.update(f"{f.relative_to(path)}:{n}".encode())
+        with f.open("rb") as fh:
+            if n <= 8 << 20:
+                h.update(fh.read())
+            else:
+                h.update(fh.read(1 << 20))
+                fh.seek(-(1 << 20), 2)
+                h.update(fh.read())
+    return h.hexdigest()[:10]
+
+
+def load_dotenv(path: Path = ROOT / ".env") -> None:
+    """KEY=VALUE lines into os.environ; a variable already set wins. ``export`` is allowed, a value in matching
+    quotes is literal, an unquoted value ends at `` #`` (an inline comment), and comment lines start with ``#``."""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.removeprefix("export ").split("=", 1)
+            v = v.strip()
+            if len(v) >= 2 and v[0] in "'\"" and v[-1] == v[0]:
+                v = v[1:-1]  # a quoted value is taken literally, '#' included
+            elif v[:1] not in "'\"":
+                v = v.split(" #", 1)[0].split("\t#", 1)[0].strip()  # an unquoted value ends at an inline comment
+            os.environ.setdefault(k.strip(), v)  # an unmatched quote is kept as is, not half-stripped
 
 
 def prob_metrics(P, Y):
@@ -61,7 +136,7 @@ def prob_metrics(P, Y):
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--model", help=f"one of {list(MODELS)}; omit to only rebuild the tables")
+    ap.add_argument("--model", help=f"one of {list(MODELS) + list(VARIETY_MODELS)}; omit to only rebuild the tables")
     ap.add_argument("--name", help="table name for a model not in MODELS (use with --id)")
     ap.add_argument("--id", help="Hugging Face id (or the server's model name for --engine http)")
     ap.add_argument("--engine", choices=("hf", "http", "fake"), default="hf", help="fake: random probabilities, to check the pipeline only")
@@ -73,7 +148,11 @@ def main() -> None:
     smoke = args.smoke or args.engine == "fake"  # random probabilities: pipeline check only, writes nothing
     if args.engine == "http" and not args.url:
         sys.exit("--engine http needs --url")
+    if args.engine == "http":
+        load_dotenv()  # TYPESAFE_API_KEY for the Jev API
     name = args.name or args.model
+    if args.model in VARIETY_MODELS and args.template != 2:
+        sys.exit(f"{args.model} is a template-2 grid model: add --template 2")
     cache_root = Path(tempfile.mkdtemp()) if smoke else ROOT / "results/cache_decision"
 
     df = io.analysis_frame(io.load())
@@ -86,48 +165,81 @@ def main() -> None:
     perturbed, _, marked, _ = e08.build_variants(texts, MASK)
     src = {"plain": texts, "marked": marked, **perturbed}
     sha = hashlib.sha1(json.dumps([src, MASK, labels, SEED], ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:10]
-    code = "".join(inspect.getsource(f) for f in (decision.build_prompt, decision.render_user, decision.render_chat, decision.per_order, decision.letter_ids))
-    prompt_sha = lambda t: hashlib.sha1(json.dumps([decision.TEMPLATES[t], decision.CYCLES, decision.LETTERS, t, code]).encode()).hexdigest()[:10]  # noqa: E731
+    code = "".join(inspect.getsource(f) for f in (decision.build_prompt, decision.render_user, decision.render_chat, decision.render_plain, decision.per_order, decision.letter_ids))
+    # what the HTTP engine sends is defined by http_body and the option names, not by the chat rendering
+    code_http = "".join(inspect.getsource(f) for f in (decision.build_prompt, decision.per_order, decision.http_body)) \
+        + json.dumps(decision.OPTION_NAMES)
+
+    def prompt_sha(t, engine="hf"):
+        c = code_http if engine == "http" else code  # the hf formula is unchanged, so earlier hf caches stay valid
+        return hashlib.sha1(json.dumps([decision.TEMPLATES[t], decision.CYCLES, decision.LETTERS, t, c]).encode()).hexdigest()[:10]
 
     if name:
-        mid = args.id or MODELS.get(args.model, name)
+        mid = args.id or {**MODELS, **VARIETY_MODELS}.get(args.model, name)
         d = cache_root / name
         d.mkdir(parents=True, exist_ok=True)
-        meta = {"id": mid, "engine": args.engine, "template": args.template, "texts": sha, "prompt": prompt_sha(args.template)}
+        meta = {"id": mid, "engine": args.engine, "template": args.template, "texts": sha,
+                "prompt": prompt_sha(args.template, args.engine)}
         old = json.loads((d / "meta.json").read_text()) if (d / "meta.json").exists() else None
-        if args.engine == "hf":
+        if args.engine == "hf" and Path(mid).is_dir():  # a local checkpoint (e.g. OpenJev): pin its files, not a commit
+            meta["revision"] = None
+            meta["files"] = checkpoint_id(Path(mid))
+        elif args.engine == "hf":
             if old:  # the revision is pinned by the first run, so a resumed run never needs the network or a newer commit
                 meta["revision"] = old.get("revision")
             else:
-                try:
-                    from huggingface_hub import HfApi
-                    meta["revision"] = HfApi().model_info(mid).sha
-                except Exception:
-                    if not smoke:  # a run without a pinned revision would load whatever main points to later
-                        raise
-                    meta["revision"] = None  # offline smoke
+                from huggingface_hub import constants
+                if constants.HF_HUB_OFFLINE:  # HPC compute node: pin the commit the local cache holds (raises if none)
+                    from huggingface_hub import snapshot_download
+                    meta["revision"] = Path(snapshot_download(mid, local_files_only=True)).name
+                else:  # online: any failure is real (bad token, Hub down), never a silent fallback
+                    try:
+                        from huggingface_hub import HfApi
+                        meta["revision"] = HfApi().model_info(mid).sha
+                    except Exception:
+                        if not smoke:  # a run without a pinned revision would load whatever main points to later
+                            raise
+                        meta["revision"] = None  # a smoke run (writes nothing) may go on without the Hub
+        if args.engine == "hf":
             import transformers
             meta["transformers"] = transformers.__version__
+        open_server = args.engine == "http" and not decision.is_typesafe(args.url)
+        if open_server:
+            meta["server"] = server_version(args.url)  # e.g. OpenJev's shim: weights dir, readout temperature, shim hash
+            meta["fingerprint"] = (old or {}).get("fingerprint")  # the answers' model string, pinned by the first run
         if old and old != meta:
             sys.exit(f"{d} was made with other settings ({(d / 'meta.json').read_text()}); delete it or pick another --name")
         (d / "meta.json").write_text(json.dumps(meta))
         todo = [v for v in TEXTS if not (d / f"{v}.npy").exists()]
         score = None
+        seen = {"model": meta["fingerprint"]} if open_server and meta.get("fingerprint") else {}  # resume: same server
         for v in todo:
             if score is None:
                 score = {"hf": lambda: decision.hf_engine(mid, batch=args.batch, revision=meta["revision"]),
-                         "http": lambda: (lambda ps: decision.score_http(args.url, ps, model=args.id)),
+                         "http": lambda: (lambda ps: decision.score_http(args.url, ps, model=args.id, seen=seen)),
                          "fake": lambda: (lambda ps: np.random.default_rng(len(ps)).dirichlet([1, 1, 1], len(ps)))}[args.engine]()
             ix = [i for i, t in enumerate(src[v]) if t is not None]
             P = np.full((len(decision.CYCLES), len(texts), len(labels)), np.nan)
             P[:, ix] = decision.per_order(score, [src[v][i] for i in ix], template=args.template, marked=v == "marked")
             np.save(d / f"{v}.tmp.npy", P)
             os.replace(d / f"{v}.tmp.npy", d / f"{v}.npy")  # a kill mid-write must not leave a half file
-            print(f"scored {name} {v}: {len(ix)} texts", flush=True)
+            if open_server and seen.get("model") and meta.get("fingerprint") != seen["model"]:
+                meta["fingerprint"] = seen["model"]  # written with the first scored text, checked on every resume
+                (d / "meta.json").write_text(json.dumps(meta))
+            if np.isnan(P[:, ix]).any():
+                sys.exit(f"{name} {v}: NaN probabilities")
+            agree = np.mean([len({int(P[k, i].argmax()) for k in range(len(decision.CYCLES))}) == 1 for i in ix])
+            print(f"scored {name} {v}: {len(ix)} texts ({score.format if hasattr(score, 'format') else args.engine}"
+                  f" prompt), the 3 option orders agree on {agree:.0%}", flush=True)
+        if args.engine == "hf" and not (d / "nll.npy").exists():  # RQ2 manipulation check: familiarity by variety
+            if score is None:
+                score = decision.hf_engine(mid, batch=args.batch, revision=meta["revision"])
+            np.save(d / "nll.npy", score.nll(texts))
+            print(f"saved {name} sentence NLL", flush=True)
 
     # ---- tables from every complete cache whose texts match ----
     names = [p.parent.name for p in sorted(cache_root.glob("*/meta.json"))
-             if json.loads(p.read_text())["texts"] == sha and json.loads(p.read_text())["prompt"] == prompt_sha(json.loads(p.read_text())["template"]) and all((p.parent / f"{v}.npy").exists() for v in TEXTS)]
+             if json.loads(p.read_text())["texts"] == sha and json.loads(p.read_text())["prompt"] == prompt_sha(json.loads(p.read_text())["template"], json.loads(p.read_text())["engine"]) and all((p.parent / f"{v}.npy").exists() for v in TEXTS)]
     names = sorted(names, key=lambda n: list(MODELS).index(n) if n in MODELS else len(MODELS))
     if not names:
         print(f"no complete cache matches the current texts and prompts in {cache_root}; tables not written")

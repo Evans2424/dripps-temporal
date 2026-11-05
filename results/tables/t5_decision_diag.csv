@@ -1,0 +1,136 @@
+model,metric,value
+qwen3.8-27b-fp8,order0 accuracy,0.4624
+qwen3.8-27b-fp8,order0 share of slot A,0.6175
+qwen3.8-27b-fp8,order0 share of slot B,0.0992
+qwen3.8-27b-fp8,order0 share of slot C,0.2832
+qwen3.8-27b-fp8,order1 accuracy,0.6069
+qwen3.8-27b-fp8,order1 share of slot A,0.2476
+qwen3.8-27b-fp8,order1 share of slot B,0.3208
+qwen3.8-27b-fp8,order1 share of slot C,0.4316
+qwen3.8-27b-fp8,order2 accuracy,0.5607
+qwen3.8-27b-fp8,order2 share of slot A,0.5472
+qwen3.8-27b-fp8,order2 share of slot B,0.3083
+qwen3.8-27b-fp8,order2 share of slot C,0.1445
+qwen3.8-27b-fp8,all three orders agree,0.6252
+qwen3.8-27b-fp8,"spearman of cue coefficients, LLM labels vs gold labels",0.6622
+qwen3.8-27b-fp8,"share of |coef| in position, gold",0.1132
+qwen3.8-27b-fp8,"share of |coef| in position, LLM",0.1977
+qwen3.8-27b-fp8,"share of |coef| in connector, gold",0.1416
+qwen3.8-27b-fp8,"share of |coef| in connector, LLM",0.1281
+qwen3.8-27b-fp8,"share of |coef| in aspect_mc, gold",0.2253
+qwen3.8-27b-fp8,"share of |coef| in aspect_mc, LLM",0.1216
+qwen3.8-27b-fp8,"share of |coef| in aspect_sc, gold",0.1204
+qwen3.8-27b-fp8,"share of |coef| in aspect_sc, LLM",0.0607
+qwen3.8-27b-fp8,"share of |coef| in tense_mc, gold",0.326
+qwen3.8-27b-fp8,"share of |coef| in tense_mc, LLM",0.3771
+qwen3.8-27b-fp8,"share of |coef| in interaction, gold",0.0735
+qwen3.8-27b-fp8,"share of |coef| in interaction, LLM",0.1149
+qwen3.8-27b-fp8,"agreement with B3 (out-of-fold, seed 0)",0.5135
+qwen3.6-27b-fp8,order0 accuracy,0.3892
+qwen3.6-27b-fp8,order0 share of slot A,0.8006
+qwen3.6-27b-fp8,order0 share of slot B,0.0732
+qwen3.6-27b-fp8,order0 share of slot C,0.1262
+qwen3.6-27b-fp8,order1 accuracy,0.553
+qwen3.6-27b-fp8,order1 share of slot A,0.2486
+qwen3.6-27b-fp8,order1 share of slot B,0.1956
+qwen3.6-27b-fp8,order1 share of slot C,0.5559
+qwen3.6-27b-fp8,order2 accuracy,0.5173
+qwen3.6-27b-fp8,order2 share of slot A,0.184
+qwen3.6-27b-fp8,order2 share of slot B,0.6079
+qwen3.6-27b-fp8,order2 share of slot C,0.2081
+qwen3.6-27b-fp8,all three orders agree,0.684
+qwen3.6-27b-fp8,"spearman of cue coefficients, LLM labels vs gold labels",0.614
+qwen3.6-27b-fp8,"share of |coef| in position, gold",0.1132
+qwen3.6-27b-fp8,"share of |coef| in position, LLM",0.2171
+qwen3.6-27b-fp8,"share of |coef| in connector, gold",0.1416
+qwen3.6-27b-fp8,"share of |coef| in connector, LLM",0.1516
+qwen3.6-27b-fp8,"share of |coef| in aspect_mc, gold",0.2253
+qwen3.6-27b-fp8,"share of |coef| in aspect_mc, LLM",0.141
+qwen3.6-27b-fp8,"share of |coef| in aspect_sc, gold",0.1204
+qwen3.6-27b-fp8,"share of |coef| in aspect_sc, LLM",0.0831
+qwen3.6-27b-fp8,"share of |coef| in tense_mc, gold",0.326
+qwen3.6-27b-fp8,"share of |coef| in tense_mc, LLM",0.3517
+qwen3.6-27b-fp8,"share of |coef| in interaction, gold",0.0735
+qwen3.6-27b-fp8,"share of |coef| in interaction, LLM",0.0556
+qwen3.6-27b-fp8,"agreement with B3 (out-of-fold, seed 0)",0.4287
+qwen3.5-9b,order0 accuracy,0.2688
+qwen3.5-9b,order0 share of slot A,0.9778
+qwen3.5-9b,order0 share of slot B,0.0164
+qwen3.5-9b,order0 share of slot C,0.0058
+qwen3.5-9b,order1 accuracy,0.2649
+qwen3.5-9b,order1 share of slot A,0.0125
+qwen3.5-9b,order1 share of slot B,0.001
+qwen3.5-9b,order1 share of slot C,0.9865
+qwen3.5-9b,order2 accuracy,0.2919
+qwen3.5-9b,order2 share of slot A,0.0019
+qwen3.5-9b,order2 share of slot B,0.9576
+qwen3.5-9b,order2 share of slot C,0.0405
+qwen3.5-9b,all three orders agree,0.9576
+qwen3.5-9b,"spearman of cue coefficients, LLM labels vs gold labels",0.3414
+qwen3.5-9b,"share of |coef| in position, gold",0.1132
+qwen3.5-9b,"share of |coef| in position, LLM",0.0575
+qwen3.5-9b,"share of |coef| in connector, gold",0.1416
+qwen3.5-9b,"share of |coef| in connector, LLM",0.0352
+qwen3.5-9b,"share of |coef| in aspect_mc, gold",0.2253
+qwen3.5-9b,"share of |coef| in aspect_mc, LLM",0.288
+qwen3.5-9b,"share of |coef| in aspect_sc, gold",0.1204
+qwen3.5-9b,"share of |coef| in aspect_sc, LLM",0.1975
+qwen3.5-9b,"share of |coef| in tense_mc, gold",0.326
+qwen3.5-9b,"share of |coef| in tense_mc, LLM",0.2323
+qwen3.5-9b,"share of |coef| in interaction, gold",0.0735
+qwen3.5-9b,"share of |coef| in interaction, LLM",0.1897
+qwen3.5-9b,"agreement with B3 (out-of-fold, seed 0)",0.2197
+qwen3.5-4b,order0 accuracy,0.2697
+qwen3.5-4b,order0 share of slot A,0.9817
+qwen3.5-4b,order0 share of slot B,0.0173
+qwen3.5-4b,order0 share of slot C,0.001
+qwen3.5-4b,order1 accuracy,0.262
+qwen3.5-4b,order1 share of slot A,0.0077
+qwen3.5-4b,order1 share of slot B,0.0029
+qwen3.5-4b,order1 share of slot C,0.9894
+qwen3.5-4b,order2 accuracy,0.2659
+qwen3.5-4b,order2 share of slot A,0.0019
+qwen3.5-4b,order2 share of slot B,0.9836
+qwen3.5-4b,order2 share of slot C,0.0145
+qwen3.5-4b,all three orders agree,0.9836
+qwen3.5-4b,"spearman of cue coefficients, LLM labels vs gold labels",0.2782
+qwen3.5-4b,"share of |coef| in position, gold",0.1132
+qwen3.5-4b,"share of |coef| in position, LLM",0.057
+qwen3.5-4b,"share of |coef| in connector, gold",0.1416
+qwen3.5-4b,"share of |coef| in connector, LLM",0.0355
+qwen3.5-4b,"share of |coef| in aspect_mc, gold",0.2253
+qwen3.5-4b,"share of |coef| in aspect_mc, LLM",0.1728
+qwen3.5-4b,"share of |coef| in aspect_sc, gold",0.1204
+qwen3.5-4b,"share of |coef| in aspect_sc, LLM",0.2582
+qwen3.5-4b,"share of |coef| in tense_mc, gold",0.326
+qwen3.5-4b,"share of |coef| in tense_mc, LLM",0.374
+qwen3.5-4b,"share of |coef| in interaction, gold",0.0735
+qwen3.5-4b,"share of |coef| in interaction, LLM",0.1025
+qwen3.5-4b,"agreement with B3 (out-of-fold, seed 0)",0.2168
+jev-1.14,order0 accuracy,0.6214
+jev-1.14,order0 share of slot A,0.2659
+jev-1.14,order0 share of slot B,0.2852
+jev-1.14,order0 share of slot C,0.4489
+jev-1.14,order1 accuracy,0.6272
+jev-1.14,order1 share of slot A,0.2823
+jev-1.14,order1 share of slot B,0.4412
+jev-1.14,order1 share of slot C,0.2765
+jev-1.14,order2 accuracy,0.6224
+jev-1.14,order2 share of slot A,0.4682
+jev-1.14,order2 share of slot B,0.2755
+jev-1.14,order2 share of slot C,0.2563
+jev-1.14,all three orders agree,0.8988
+jev-1.14,"spearman of cue coefficients, LLM labels vs gold labels",0.4954
+jev-1.14,"share of |coef| in position, gold",0.1132
+jev-1.14,"share of |coef| in position, LLM",0.1869
+jev-1.14,"share of |coef| in connector, gold",0.1416
+jev-1.14,"share of |coef| in connector, LLM",0.1437
+jev-1.14,"share of |coef| in aspect_mc, gold",0.2253
+jev-1.14,"share of |coef| in aspect_mc, LLM",0.0827
+jev-1.14,"share of |coef| in aspect_sc, gold",0.1204
+jev-1.14,"share of |coef| in aspect_sc, LLM",0.1368
+jev-1.14,"share of |coef| in tense_mc, gold",0.326
+jev-1.14,"share of |coef| in tense_mc, LLM",0.2772
+jev-1.14,"share of |coef| in interaction, gold",0.0735
+jev-1.14,"share of |coef| in interaction, LLM",0.1728
+jev-1.14,"agreement with B3 (out-of-fold, seed 0)",0.5222
