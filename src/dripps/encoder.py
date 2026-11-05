@@ -22,9 +22,10 @@ CHECKPOINTS = {
     "bertimbau-large": "neuralmind/bert-large-portuguese-cased",
     "albertina": "PORTULAN/albertina-100m-portuguese-ptpt-encoder",
     "albertina-900m": "PORTULAN/albertina-900m-portuguese-ptpt-encoder",
+    "albertina-ptbr": "PORTULAN/albertina-100m-portuguese-ptbr-encoder",  # RQ2: the PT-BR twin of "albertina"
 }
 #: checkpoints trained in fp32 (their attention masking overflows under bf16 autocast); part of their cache key
-FP32_CHECKPOINTS = ("mdeberta", "albertina", "albertina-900m")
+FP32_CHECKPOINTS = ("mdeberta", "albertina", "albertina-900m", "albertina-ptbr")
 
 #: How the annotated cues reach the model (a variant is ``{plain|marked}[_mode][@checkpoint]``):
 #:   feat  cue matrix concatenated to the text vector (a second linear layer, own learning rate)
