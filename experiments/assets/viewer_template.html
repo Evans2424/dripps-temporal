@@ -308,7 +308,7 @@ S.progress = () => {
     {key: "result", label: b[0]}, {key: "conclusion", label: b[1]},
     {key: "direction", label: "Linguistic direction"}];
   const block = (title, status, sub, rows, c) => {
-    const pn = panel(title, sub, tableOf(c, rows));
+    const pn = panel(title, sub, rows.length ? tableOf(c, rows) : el("p", {class: "note", text: "None at the moment."}));
     pn.querySelector("h3").appendChild(el("span", {class: "chip " + status[0], text: status[1],
       style: "margin-left:10px;vertical-align:middle"}));
     return pn;

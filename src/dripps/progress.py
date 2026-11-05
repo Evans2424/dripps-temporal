@@ -11,10 +11,11 @@ from . import results
 
 
 #: One caveat for both pages; the encoder sentence must follow results/tables/t1_encoder.csv.
-NOTE = ("The cue hierarchy and the model ladder are the firm results. Text alone sits below the cues-only model: plain "
-        "xlm-roberta-base and plain BERTimbau have paired intervals against B3 that exclude 0. Encoders that start from "
-        "the cues or see them only match B3, and no model has been shown to beat it or to add to the cues. Annotator "
-        "agreement is not available for the later batches.")
+NOTE = ("The cue hierarchy and the model ladder are the firm results. No fine-tuned encoder (xlm-roberta-base, BERTimbau, "
+        "Albertina, mDeBERTa) beats B3 or adds to it: plain text is below the cues for three of the four (paired "
+        "intervals exclude 0; mDeBERTa's includes 0), and marked text matches them. Large "
+        "zero-shot LLMs (Qwen 27B, Jev) do add to B3 when averaged with it; that result is exploratory until the tests in "
+        "docs/T5_ROBUSTNESS_PLAN.md. Annotator agreement is not available for the later batches.")
 
 
 def summary(n_rows: int) -> dict:
@@ -122,21 +123,49 @@ def summary(n_rows: int) -> dict:
          "knowing Portuguese better. Caveat: BERTimbau is pretrained on Brazilian text and most of the corpus is "
          "European, so Albertina (PT-PT) is the fairer test."),
     ]
-    running = [
+    done += [
         ("T1, round 3: Albertina (PT-PT) and mDeBERTa",
          "Plain and marked, tuned in-fold, same folds. DeBERTa models run in fp32 (bf16 attention masking overflows).",
-         "Partly run; tables not final.",
-         "Does a European-Portuguese model, or a different architecture, close the gap?",
-         "A gain for Albertina only would point to European-Portuguese usage; none would leave annotation size and the "
-         "ceiling of the five cues as the explanation."),
+         f"Albertina: plain {iv(x('plain@albertina'))}, marked {iv(x('marked@albertina'))}; mDeBERTa: plain "
+         f"{iv(x('plain@mdeberta'))}, marked {iv(x('marked@mdeberta'))}. Marked minus B3: Albertina "
+         f"{f(pv('marked@albertina').macro_f1)} {ci(pv('marked@albertina'))}, mDeBERTa {f(pv('marked@mdeberta').macro_f1)} "
+         f"{ci(pv('marked@mdeberta'))}.",
+         "Neither closes the gap: marked text matches B3. Plain Albertina is below it (interval excludes 0), like "
+         "xlm-roberta-base and BERTimbau; plain mDeBERTa is lower too, but its interval includes 0.",
+         "European-Portuguese pretraining and a different architecture change nothing, so the ceiling is the annotation's "
+         "size and the five cue types, not the encoder."),
     ]
+    try:
+        t5 = results.csv("t5_decision.csv").set_index("model")
+    except results.MissingTable:
+        t5 = None
+    q, j = "decision qwen3.8-27b-fp8", "decision jev-1.14"
+    t5_rows = [q, q + " calibrated", j, "decision qwen3.5-4b", "decision qwen3.5-9b",
+               "B3 + " + q + " calibrated, w=0.5 - B3 logit (paired)"]
+    if t5 is not None and all(k in t5.index for k in t5_rows):  # e.g. a table rebuilt where the Jev cache is absent
+        r = lambda k: t5.loc[k]  # noqa: E731
+        done += [
+            ("T5: zero-shot LLM decisions (Qwen 4B, 9B, 3.6-27B, 3.8-27B; Jev 1.14)",
+             "The model reads the sentence, the question and three options; option probabilities from one forward pass, "
+             "averaged over 3 rotated orders. Raw = no labels; calibrated = 12-parameter logit on the training folds; "
+             "B3 + model = average at w = 0.5. Headline (pre-set): Qwen3.8-27B, plain, raw.",
+             f"Headline raw {iv(r(q))}; calibrated {iv(r(q + ' calibrated'))}. Jev raw {iv(r(j))}. "
+             f"Qwen 4B and 9B raw {f(r('decision qwen3.5-4b').macro_f1)} and {f(r('decision qwen3.5-9b').macro_f1)}. "
+             f"B3 + Qwen 27B minus B3 {f(r('B3 + ' + q + ' calibrated, w=0.5 - B3 logit (paired)').macro_f1)} "
+             f"{ci(r('B3 + ' + q + ' calibrated, w=0.5 - B3 logit (paired)'))}.",
+             "Small models answer 'Before' for almost every clause; at 27B the bias goes. Calibrated, the large models match "
+             "B3, and averaged with it they add about 0.04, open and closed models alike. Exploratory until the robustness tests.",
+             "Large LLMs carry information the 17 cues miss, apparently verb meaning and the timeline. They also lean on "
+             "position more and on main-clause aspect less than the corpus does: high cue strength against moderate validity."),
+        ]
+    running = []
     planned = [
-        ("Larger encoders", "XLM-R large, BERTimbau large, Albertina 900M, only if Albertina or mDeBERTa show a gain (BERTimbau did not).",
-         "Is capacity, not pretraining language, the limit for text-only models?"),
-        ("Generative models", "4 to 5 open-weight LLMs (7B to 70B), zero-shot, few-shot, cues in the prompt, LoRA; same folds and perturbations.",
+        ("Larger encoders (on hold)", "XLM-R large, BERTimbau large, Albertina 900M were conditional on a gain from Albertina or mDeBERTa; neither showed one.",
+         "Only worth running if the robustness tests point to capacity as the limit."),
+        ("Generative models, beyond zero-shot", "Few-shot, cues in the prompt, LoRA on the open 27B; same folds and perturbations.",
          "Do models with broad world knowledge use lexical event cues (adverbials such as de seguida) that the inventory leaves out?"),
-        ("Decision-making models", "Two open reproductions of a Jev-style mechanism, scored on the same task.",
-         "Does an explicit decision process weight main-clause cues the way the corpus does?"),
+        ("T5 robustness tests", "docs/T5_ROBUSTNESS_PLAN.md: incremental validity, identical-cue test, held-out replication; prompt, version and contamination checks; valid perturbations.",
+         "Do the large LLMs' extra information and cue reliance survive pre-registered tests?"),
         ("Comparison with theory", "Test the aspect and tense predictions per model family; agreement between families; variety question.",
          "Which claims survive across families: telicity to Ant or Post, durativity to Simul, main-clause dominance?"),
         ("Validation", "Hand-check the span sample; fresh annotated batch as a held-out confirmation; annotator agreement.",

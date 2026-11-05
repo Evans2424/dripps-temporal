@@ -16,6 +16,9 @@ def render():
         return
 
     def show(rows, cols):
+        if not rows:  # e.g. nothing running between rounds
+            st.caption("None at the moment.")
+            return
         st.table(pd.DataFrame(rows).rename(columns=cols).set_index(next(iter(cols.values()))))
 
     st.subheader(":green[Completed]")
